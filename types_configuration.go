@@ -13,7 +13,7 @@ type Configuration struct {
 
 	// Port TCP/IP порт занимаемый сервером.
 	// Default value: 0
-	Port uint16 `yaml:"Port" json:"port" default-value:"80"`
+	Port uint16 `yaml:"Port" json:"port" default-value:"-"`
 
 	// Socket Unix socket, systemd socket на котором поднимается сервер, только для unix-like операционных
 	// систем Linux, Unix, Mac.

@@ -188,7 +188,7 @@ func (nut *impl) Serve(ltn net.Listener) Interface { return nut.serve(netListene
 // ServeUdp Запуск функции сервера для входящих UDP пакетов на основе переданного слушателя net.PacketConn.
 func (nut *impl) ServeUdp(lpc net.PacketConn) Interface { return nut.serve(netListenerUdp(lpc)) }
 
-// Запуск функции сервера для взодящих соединений на основе слушателя netListener, который может содержать
+// Запуск функции сервера для входящих соединений на основе слушателя netListener, который может содержать
 // соединения следующих типов: udp, tcp, socket.
 func (nut *impl) serve(nl *netListener) Interface {
 	var (
@@ -259,7 +259,7 @@ func (nut *impl) run(onUp chan struct{}) {
 	safeSendSignal(nut.onShutdown)
 }
 
-// Безопасный запуск основной функции сервера.
+// Безопасный запуск пользовательской основной функции сервера.
 func (nut *impl) safeHandlerRun() (err error) {
 	defer func() { err = recoverErrorWithStack(recover(), err) }()
 	switch nut.listener.isUdp() {
