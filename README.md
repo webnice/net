@@ -21,28 +21,32 @@ go get github.com/webnice/net
 
 ### Использование в приложении
 
+Пример веб сервера с роутингом через "github.com/go-chi/chi/v5".
+
 ```go
 package main
 
 import (
+	"io"
 	"log"
 	"net"
 	"net/http"
 
-	"github.com/labstack/echo/v4"
+	"github.com/go-chi/chi/v5"
 	wns "github.com/webnice/net"
 )
 
 func main() {
 	nut := wns.New().
 		Handler(func(l net.Listener) error {
-			ehr := echo.New()
-			ehr.GET("/", func(c echo.Context) error {
-				return c.String(http.StatusOK, "Hello, World!")
+			route := chi.NewRouter()
+			route.Get("/", func(wr http.ResponseWriter, rq *http.Request) {
+				wr.Header().Set("Content-Type", "text/plain")
+				_, _ = io.WriteString(wr, "Hello, World!")
 			})
 			srv := &http.Server{
 				Addr:    "localhost:8080",
-				Handler: ehr,
+				Handler: route,
 			}
 
 			return srv.Serve(l)
@@ -55,7 +59,7 @@ func main() {
 	// Ожидание завершения сервера.
 	if err := nut.Wait().
 		Error(); err != nil {
-		log.Fatalf("сервер завершился с ошибкой: %s", nut.Error())
+		log.Fatalf("сервер завершился с ошибкой: %s", err)
 		return
 	}
 }

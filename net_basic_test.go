@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/labstack/echo/v4"
+	"github.com/go-chi/chi/v5"
 )
 
 func TestBasicWebServer(t *testing.T) {
@@ -18,17 +18,18 @@ func TestBasicWebServer(t *testing.T) {
 	nut := New().
 		Handler(func(l net.Listener) (err error) {
 			var (
-				ehr *echo.Echo
-				srv *http.Server
+				route *chi.Mux
+				srv   *http.Server
 			)
 
-			ehr = echo.New()
-			ehr.GET("/", func(c echo.Context) error {
-				return c.String(http.StatusOK, "Hello, World!")
+			route = chi.NewRouter()
+			route.Get("/", func(wr http.ResponseWriter, rq *http.Request) {
+				wr.Header().Set("Content-Type", "text/plain")
+				_, _ = io.WriteString(wr, "Hello, World!")
 			})
 			srv = &http.Server{
 				Addr:    addr,
-				Handler: ehr,
+				Handler: route,
 			}
 			err = srv.Serve(l)
 
