@@ -19,10 +19,10 @@ func TestErrors(t *testing.T) {
 func TestErrAlreadyRunning(t *testing.T) {
 	var v interface{}
 
-	if ErrAlreadyRunning() != &errAlreadyRunning {
+	if Errors().AlreadyRunning() != &errAlreadyRunning {
 		t.Errorf("фунция ErrAlreadyRunning(), функция повреждена")
 	}
-	switch v = ErrAlreadyRunning().Error(); s := v.(type) {
+	switch v = Errors().AlreadyRunning().Error(); s := v.(type) {
 	case string:
 		if !strings.EqualFold(s, cAlreadyRunning) {
 			t.Fatalf("фунция ErrAlreadyRunning(), функция повреждена")
@@ -35,10 +35,10 @@ func TestErrAlreadyRunning(t *testing.T) {
 func TestErrNoConfiguration(t *testing.T) {
 	var v interface{}
 
-	if ErrNoConfiguration() != &errNoConfiguration {
+	if Errors().NoConfiguration() != &errNoConfiguration {
 		t.Errorf("фунция ErrAlreadyRunning(), функция повреждена")
 	}
-	switch v = ErrNoConfiguration().Error(); s := v.(type) {
+	switch v = Errors().NoConfiguration().Error(); s := v.(type) {
 	case string:
 		if !strings.EqualFold(s, cNoConfiguration) {
 			t.Fatalf("фунция ErrNoConfiguration(), функция повреждена")

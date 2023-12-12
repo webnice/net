@@ -32,17 +32,17 @@ func (nut *impl) ListenEnv() (ret *listenEnv, err error) {
 	ret.names = strings.Split(os.Getenv(listenFdNames), sepColon)
 	// Проверка ID процесса.
 	if ret.pid != os.Getpid() {
-		err = ErrListenSystemdPID()
+		err = Errors().ListenSystemdPID()
 		return
 	}
 	// Проверка количества передаваемых соединений.
 	if ret.fds == 0 {
-		err = ErrListenSystemdFDS()
+		err = Errors().ListenSystemdFDS()
 		return
 	}
 	// Проверка заявленного количества с фактически переданным количеством соединений.
 	if ret.fds != len(ret.names) {
-		err = ErrListenSystemdQuantityNotMatch()
+		err = Errors().ListenSystemdQuantityNotMatch()
 		return
 	}
 
@@ -136,7 +136,7 @@ func (nut *impl) ListenersSystemdTLSWithoutNames(tlsConfig *tls.Config) (ret []n
 		return
 	}
 	if tlsConfig == nil {
-		err = ErrTLSIsNil()
+		err = Errors().TLSIsNil()
 		return
 	}
 	ret = make([]net.Listener, 0, len(listeners))
@@ -161,7 +161,7 @@ func (nut *impl) ListenersSystemdTLSWithNames(tlsConfig *tls.Config) (ret map[st
 		return
 	}
 	if tlsConfig == nil {
-		err = ErrTLSIsNil()
+		err = Errors().TLSIsNil()
 		return
 	}
 	for _, ll = range listeners {

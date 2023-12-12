@@ -59,6 +59,9 @@ type Interface interface {
 	// сервера.
 	NewListenerTLS(conf *Configuration, tlsConfig *tls.Config) (ret net.Listener, rpc net.PacketConn, err error)
 
+	// NewTLSConfigDefault Создание TLS конфигурации по умолчанию, на основе секретного и публичного ключей.
+	NewTLSConfigDefault(tlsPublicFile string, tlsPrivateFile string) (ret *tls.Config, err error)
+
 	// СЕРВЕР
 
 	// Serve Запуск функции сервера для входящих соединений на основе переданного слушателя net.Listener.
@@ -73,6 +76,10 @@ type Interface interface {
 
 	// Stop Завершение работы сервера/функции сервера.
 	Stop() Interface
+
+	// IsRunning Статус выполнения сервера.
+	// Вернётся истина, если сервер запущен.
+	IsRunning() (ret bool)
 
 	// ОШИБКИ
 

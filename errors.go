@@ -42,29 +42,29 @@ func Errors() *Error { return errSingleton }
 
 // ОШИБКИ.
 
-// ErrAlreadyRunning Сервер уже запущен.
-func ErrAlreadyRunning() error { return &errAlreadyRunning }
+// AlreadyRunning Сервер уже запущен.
+func (e *Error) AlreadyRunning() error { return &errAlreadyRunning }
 
-// ErrNoConfiguration Конфигурация сервера отсутствует либо равна nil.
-func ErrNoConfiguration() error { return &errNoConfiguration }
+// NoConfiguration Конфигурация сервера отсутствует либо равна nil.
+func (e *Error) NoConfiguration() error { return &errNoConfiguration }
 
-// ErrListenSystemdPID Переменная окружения LISTEN_PID пустая, либо содержит не верное значение.
-func ErrListenSystemdPID() error { return &errListenSystemdPID }
+// ListenSystemdPID Переменная окружения LISTEN_PID пустая, либо содержит не верное значение.
+func (e *Error) ListenSystemdPID() error { return &errListenSystemdPID }
 
-// ErrListenSystemdFDS Переменная окружения LISTEN_FDS пустая, либо содержит не верное значение.
-func ErrListenSystemdFDS() error { return &errListenSystemdFDS }
+// ListenSystemdFDS Переменная окружения LISTEN_FDS пустая, либо содержит не верное значение.
+func (e *Error) ListenSystemdFDS() error { return &errListenSystemdFDS }
 
-// ErrListenSystemdNotFound Получение сокета systemd по имени, имя не найдено.
-func ErrListenSystemdNotFound() error { return &errListenSystemdNotFound }
+// ListenSystemdNotFound Получение сокета systemd по имени, имя не найдено.
+func (e *Error) ListenSystemdNotFound() error { return &errListenSystemdNotFound }
 
-// ErrListenSystemdQuantityNotMatch Полученное количество LISTEN_FDS не соответствует переданному LISTEN_FDNAMES.
-func ErrListenSystemdQuantityNotMatch() error { return &errListenSystemdQuantityNotMatch }
+// ListenSystemdQuantityNotMatch Полученное количество LISTEN_FDS не соответствует переданному LISTEN_FDNAMES.
+func (e *Error) ListenSystemdQuantityNotMatch() error { return &errListenSystemdQuantityNotMatch }
 
-// ErrTLSIsNil Конфигурация TLS сервера пустая.
-func ErrTLSIsNil() error { return &errTLSIsNil }
+// TLSIsNil Конфигурация TLS сервера пустая.
+func (e *Error) TLSIsNil() error { return &errTLSIsNil }
 
-// ErrServerHandlerIsNotSet Не установлен обработчик основной функции TCP сервера.
-func ErrServerHandlerIsNotSet() error { return &errServerHandlerIsNotSet }
+// ServerHandlerIsNotSet Не установлен обработчик основной функции TCP сервера.
+func (e *Error) ServerHandlerIsNotSet() error { return &errServerHandlerIsNotSet }
 
-// ErrServerHandlerUdpIsNotSet Не установлен обработчик основной функции UDP сервера.
-func ErrServerHandlerUdpIsNotSet() error { return &errServerHandlerUdpIsNotSet }
+// ServerHandlerUdpIsNotSet Не установлен обработчик основной функции UDP сервера.
+func (e *Error) ServerHandlerUdpIsNotSet() error { return &errServerHandlerUdpIsNotSet }

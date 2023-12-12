@@ -215,7 +215,7 @@ func TestTLSNoConfigurationError(t *testing.T) {
 	if wsv.Error() == nil {
 		t.Errorf("функция ListenAndServeTLSWithConfig(), не корректная проверка адреса")
 	}
-	if !errors.Is(wsv.Error(), ErrNoConfiguration()) {
+	if !errors.Is(wsv.Error(), Errors().NoConfiguration()) {
 		t.Errorf("функция ListenAndServeTLSWithConfig(), получена не корректная ошибка")
 	}
 }

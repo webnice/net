@@ -92,3 +92,30 @@ func TestWaitNotRun(t *testing.T) {
 		t.Errorf("фунция Wait(), ошибка: %v, ожидалось: %v", err, nil)
 	}
 }
+
+func TestImpl_IsRunning(t *testing.T) {
+	const testAddress1 = "localhost:18080"
+	var (
+		err error
+		ltn net.Listener
+		w1  Interface
+		ok  bool
+	)
+
+	if ltn, err = net.Listen("tcp", testAddress1); err != nil {
+		t.Errorf("функция Listen(%q, %q), прервана ошибкой: %s", "tcp", testAddress1, err)
+	}
+	w1 = New().
+		Handler(getTestHandlerFn(false))
+	if ok = w1.IsRunning(); ok {
+		t.Errorf("функция IsRunning(), вернулось: %t, ожидалось: %t", ok, false)
+	}
+	w1.Serve(ltn)
+	defer w1.Stop()
+	if w1.(*impl).conf == nil {
+		t.Errorf("ошибка создания конфигурации сервера")
+	}
+	if ok = w1.IsRunning(); !ok {
+		t.Errorf("функция IsRunning(), вернулось: %t, ожидалось: %t", ok, true)
+	}
+}

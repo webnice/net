@@ -70,3 +70,17 @@ func (nut *impl) Stop() Interface {
 
 	return nut
 }
+
+// IsRunning Статус выполнения сервера.
+// Вернётся истина, если сервер запущен.
+func (nut *impl) IsRunning() (ret bool) {
+	// Защита от возможной смертельной блокировки при остановке сервера из разных потоков.
+	nut.lck.Lock()
+	defer nut.lck.Unlock()
+	// Выход, если сервер запущен или начато завершение работы сервера.
+	if nut.isRun.Load() || nut.isShutdown.Load() {
+		ret = true
+	}
+
+	return
+}

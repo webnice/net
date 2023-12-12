@@ -48,7 +48,7 @@ func TestNoConfigurationError(t *testing.T) {
 	if wsv.Error() == nil {
 		t.Errorf("функция ListenAndServe(), не корректная проверка адреса")
 	}
-	if !errors.Is(wsv.Error(), ErrNoConfiguration()) {
+	if !errors.Is(wsv.Error(), Errors().NoConfiguration()) {
 		t.Errorf("функция ListenAndServe(), получена не корректная ошибка")
 	}
 }
@@ -69,16 +69,16 @@ func TestAlreadyRunningError(t *testing.T) {
 	}
 	nut.ListenAndServe(testAddress2)
 	if nut.Error() == nil {
-		t.Errorf("функция ListenAndServe(), ошибка: %v, ожидалось: %v", nut.Error(), ErrAlreadyRunning())
+		t.Errorf("функция ListenAndServe(), ошибка: %v, ожидалось: %v", nut.Error(), Errors().AlreadyRunning())
 	}
-	if !errors.Is(nut.Error(), ErrAlreadyRunning()) {
+	if !errors.Is(nut.Error(), Errors().AlreadyRunning()) {
 		t.Errorf("функция ListenAndServe(), не корректная ошибка")
 	}
 	if !errors.Is(nut.
 		Clean().                      // Очистка последней ошибки.
 		ListenAndServe(testAddress1). // Запуск сервера, который уже запущен.
-		Error(), ErrAlreadyRunning()) {
-		t.Errorf("функция ListenAndServe(), ошибка: %v, ожидалось: %v", nut.Error(), ErrAlreadyRunning())
+		Error(), Errors().AlreadyRunning()) {
+		t.Errorf("функция ListenAndServe(), ошибка: %v, ожидалось: %v", nut.Error(), Errors().AlreadyRunning())
 	}
 }
 
@@ -99,7 +99,7 @@ func TestPortIsBusy(t *testing.T) {
 	w2.ListenAndServe(testAddress1)
 	defer w2.Stop()
 	if w2.Error() == nil {
-		t.Errorf("функция ListenAndServe(), ошибка: %v, ожидалось: %v", w2.Error(), ErrAlreadyRunning())
+		t.Errorf("функция ListenAndServe(), ошибка: %v, ожидалось: %v", w2.Error(), Errors().AlreadyRunning())
 	}
 }
 
@@ -202,10 +202,10 @@ func TestServeAlreadyRunning(t *testing.T) {
 	if err = w1.
 		Serve(ltn).
 		Error(); err == nil {
-		t.Errorf("функция Serve(), ошибка: %v, ожидалось: %v", err, ErrAlreadyRunning())
+		t.Errorf("функция Serve(), ошибка: %v, ожидалось: %v", err, Errors().AlreadyRunning())
 	}
-	if !errors.Is(err, ErrAlreadyRunning()) {
-		t.Errorf("функция Serve(), ошибка: %v, ожидалось: %v", err, ErrAlreadyRunning())
+	if !errors.Is(err, Errors().AlreadyRunning()) {
+		t.Errorf("функция Serve(), ошибка: %v, ожидалось: %v", err, Errors().AlreadyRunning())
 	}
 }
 
@@ -224,7 +224,7 @@ func TestServeErrServerHandlerIsNotSet(t *testing.T) {
 	w1 = New().
 		Serve(ltn)
 	if err = w1.Error(); err == nil {
-		t.Errorf("функция Serve(), ошибка: %v, ожидалось: %v", err, ErrServerHandlerIsNotSet())
+		t.Errorf("функция Serve(), ошибка: %v, ожидалось: %v", err, Errors().ServerHandlerIsNotSet())
 	}
 }
 
@@ -243,7 +243,7 @@ func TestServeErrServerHandlerUdpIsNotSet(t *testing.T) {
 	w1 = New().
 		ServeUdp(ltn)
 	if err = w1.Error(); err == nil {
-		t.Errorf("функция Serve(), ошибка: %v, ожидалось: %v", err, ErrServerHandlerIsNotSet())
+		t.Errorf("функция Serve(), ошибка: %v, ожидалось: %v", err, Errors().ServerHandlerIsNotSet())
 	}
 }
 

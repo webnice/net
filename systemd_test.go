@@ -49,8 +49,8 @@ func TestListenEnv(t *testing.T) {
 		t.Fatalf("невозможно установить переменные окружения %q", envListenFds)
 	}
 	// Проверка соответствия PID.
-	if env, err = obj.ListenEnv(); !errors.Is(err, ErrListenSystemdPID()) {
-		t.Errorf("функция ListenEnv(), ошибка: %v, ожидалось: %v", err, ErrListenSystemdPID())
+	if env, err = obj.ListenEnv(); !errors.Is(err, Errors().ListenSystemdPID()) {
+		t.Errorf("функция ListenEnv(), ошибка: %v, ожидалось: %v", err, Errors().ListenSystemdPID())
 	}
 	// Установка корректного значения.
 	if err = os.Setenv(envListenPid, fmt.Sprint(os.Getpid())); err != nil {
@@ -58,8 +58,8 @@ func TestListenEnv(t *testing.T) {
 	}
 	defer func() { _ = os.Unsetenv(envListenPid) }()
 	// Проверка ошибки не корректного значения переменной окружения LISTEN_FDS.
-	if env, err = obj.ListenEnv(); !errors.Is(err, ErrListenSystemdFDS()) {
-		t.Errorf("функция ListenEnv(), ошибка: %v, ожидалось: %v", err, ErrListenSystemdFDS())
+	if env, err = obj.ListenEnv(); !errors.Is(err, Errors().ListenSystemdFDS()) {
+		t.Errorf("функция ListenEnv(), ошибка: %v, ожидалось: %v", err, Errors().ListenSystemdFDS())
 	}
 	// Установка корректного значения переменной LISTEN_FDS.
 	sar = []string{s0, s1, s2, s3}
@@ -68,8 +68,8 @@ func TestListenEnv(t *testing.T) {
 	}
 	defer func() { _ = os.Unsetenv(envListenFds) }()
 	// Проверка ошибки не соответствия количества заявленному значению.
-	if env, err = obj.ListenEnv(); !errors.Is(err, ErrListenSystemdQuantityNotMatch()) {
-		t.Errorf("функция ListenEnv(), ошибка: %v, ожидалось: %v", err, ErrListenSystemdQuantityNotMatch())
+	if env, err = obj.ListenEnv(); !errors.Is(err, Errors().ListenSystemdQuantityNotMatch()) {
+		t.Errorf("функция ListenEnv(), ошибка: %v, ожидалось: %v", err, Errors().ListenSystemdQuantityNotMatch())
 	}
 	// Установка переменной окружения .
 	if err = os.Setenv(envListenFdnames, strings.Join(sar, sepColon)); err != nil {
@@ -218,8 +218,8 @@ func TestNewListener(t *testing.T) {
 	if _, _, err = nut.NewListener(&Configuration{Mode: keySystemd, Socket: s1}); err == nil {
 		t.Errorf("функция NewListener() повреждена, ожидалась ошибка")
 	}
-	if !errors.Is(err, ErrListenSystemdNotFound()) {
-		t.Errorf("функция NewListener(), ошибка: %v, ожидалась: %v", err, ErrListenSystemdNotFound())
+	if !errors.Is(err, Errors().ListenSystemdNotFound()) {
+		t.Errorf("функция NewListener(), ошибка: %v, ожидалась: %v", err, Errors().ListenSystemdNotFound())
 	}
 	// Без ошибок.
 	if _, _, err = nut.NewListener(&Configuration{Mode: keySystemd, Socket: s0}); err != nil {
@@ -288,7 +288,7 @@ func TestListenersSystemdTLSWithoutNames(t *testing.T) {
 	// Тестирование с конфигурацией TLS.
 	key, crt = newTmpFile(getKeyEcdsa()), newTmpFile(getCrtEcdsa())
 	defer func() { key.Clean(); crt.Clean() }()
-	if tcg, err = obj.tlsConfigDefault(crt.Filename, key.Filename); err != nil {
+	if tcg, err = obj.NewTLSConfigDefault(crt.Filename, key.Filename); err != nil {
 		t.Fatalf("не удалось создать *tls.Config, ошибка: %s", err)
 	}
 	if _, err = obj.ListenersSystemdTLSWithoutNames(tcg); err != nil {

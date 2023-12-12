@@ -39,7 +39,7 @@ func (nut *impl) ListenAndServeTLS(addr string, certFile string, keyFile string,
 // обслуживания входящих соединений.
 func (nut *impl) ListenAndServeWithConfig(conf *Configuration) Interface {
 	if conf == nil {
-		nut.err = ErrNoConfiguration()
+		nut.err = Errors().NoConfiguration()
 		return nut
 	}
 	nut.conf = conf
@@ -52,12 +52,12 @@ func (nut *impl) ListenAndServeWithConfig(conf *Configuration) Interface {
 // обслуживания входящих соединений.
 func (nut *impl) ListenAndServeTLSWithConfig(conf *Configuration, tlsConfig *tls.Config) Interface {
 	if conf == nil {
-		nut.err = ErrNoConfiguration()
+		nut.err = Errors().NoConfiguration()
 		return nut
 	}
 	nut.conf = conf
 	if tlsConfig == nil {
-		if tlsConfig, nut.err = nut.tlsConfigDefault(conf.TLSPublicKeyPEM, conf.TLSPrivateKeyPEM); nut.err != nil {
+		if tlsConfig, nut.err = nut.NewTLSConfigDefault(conf.TLSPublicKeyPEM, conf.TLSPrivateKeyPEM); nut.err != nil {
 			return nut
 		}
 	}
@@ -93,7 +93,7 @@ func (nut *impl) NewListener(conf *Configuration) (
 			}
 			// Выбор сокета по названию.
 			if listeners, ok = lstWithNames[path.Base(conf.Socket)]; !ok {
-				err = ErrListenSystemdNotFound()
+				err = Errors().ListenSystemdNotFound()
 				return
 			}
 		}
@@ -124,7 +124,7 @@ func (nut *impl) NewListenerTLS(conf *Configuration, tlsConfig *tls.Config) (
 	var lst net.Listener
 
 	if lst, rpc, nut.err = nut.NewListener(conf); tlsConfig == nil {
-		if tlsConfig, err = nut.tlsConfigDefault(conf.TLSPublicKeyPEM, conf.TLSPrivateKeyPEM); err != nil {
+		if tlsConfig, err = nut.NewTLSConfigDefault(conf.TLSPublicKeyPEM, conf.TLSPrivateKeyPEM); err != nil {
 			err = fmt.Errorf(errTemplate, conf.TLSPublicKeyPEM, conf.TLSPrivateKeyPEM, err)
 			return
 		}
@@ -134,8 +134,8 @@ func (nut *impl) NewListenerTLS(conf *Configuration, tlsConfig *tls.Config) (
 	return
 }
 
-// Конфигурация TLS по умолчанию.
-func (nut *impl) tlsConfigDefault(tlsPublicFile string, tlsPrivateFile string) (ret *tls.Config, err error) {
+// NewTLSConfigDefault Создание TLS конфигурации по умолчанию, на основе секретного и публичного ключей.
+func (nut *impl) NewTLSConfigDefault(tlsPublicFile string, tlsPrivateFile string) (ret *tls.Config, err error) {
 	ret = &tls.Config{
 		MinVersion:       tls.VersionTLS12,
 		CurvePreferences: []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
@@ -154,7 +154,7 @@ func (nut *impl) tlsConfigDefault(tlsPublicFile string, tlsPrivateFile string) (
 	return
 }
 
-// Listen Запуск прослушивания входящих соединений и веб сервера.
+// Listen Создание слушателя по TLS конфигурации, запуск прослушивания входящих соединений и запуск сервера.
 func (nut *impl) Listen(tlsConfig *tls.Config) Interface {
 	var (
 		lTcp net.Listener
@@ -162,7 +162,7 @@ func (nut *impl) Listen(tlsConfig *tls.Config) Interface {
 	)
 
 	if nut.isRun.Load() {
-		nut.err = ErrAlreadyRunning()
+		nut.err = Errors().AlreadyRunning()
 		return nut
 	}
 	switch tlsConfig == nil {
@@ -201,7 +201,7 @@ func (nut *impl) serve(nl *netListener) Interface {
 	defer nut.lck.Unlock()
 	// Выход, если сервер запущен или начато завершение работы сервера.
 	if nut.isRun.Load() || nut.isShutdown.Load() {
-		nut.err = ErrAlreadyRunning()
+		nut.err = Errors().AlreadyRunning()
 		return nut
 	}
 	if nut.listener = nl; nut.conf == nil {
@@ -240,12 +240,12 @@ func (nut *impl) run(onUp chan struct{}) {
 	switch nut.listener.isUdp() {
 	case true:
 		if nut.handlerUdp == nil {
-			nut.err = ErrServerHandlerUdpIsNotSet()
+			nut.err = Errors().ServerHandlerUdpIsNotSet()
 			return
 		}
 	default:
 		if nut.handler == nil {
-			nut.err = ErrServerHandlerIsNotSet()
+			nut.err = Errors().ServerHandlerIsNotSet()
 			return
 		}
 	}
