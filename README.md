@@ -2,7 +2,7 @@
 
 [![GoDoc](https://godoc.org/github.com/webnice/net?status.png)](http://godoc.org/github.com/webnice/net)
 [![Go Report Card](https://goreportcard.com/badge/github.com/webnice/net)](https://goreportcard.com/report/github.com/webnice/net)
-[![Coverage Status](https://coveralls.io/repos/github/webnice/net/badge.svg?branch=v1)](https://coveralls.io/github/webnice/net?branch=v1)
+[![Coverage Status](https://coveralls.io/repos/github/webnice/net/badge.svg?branch=master%0Av1)](https://coveralls.io/github/webnice/net?branch=master%0Av1)
 
 #### Описание
 
