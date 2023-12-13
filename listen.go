@@ -121,13 +121,19 @@ func (nut *impl) NewListenerTLS(conf *Configuration, tlsConfig *tls.Config) (
 	err error,
 ) {
 	const errTemplate = "публичный ключ %q, секретный ключ %q, ошибка: %s"
-	var lst net.Listener
+	var (
+		lst net.Listener
+		ler error
+	)
 
-	if lst, rpc, nut.err = nut.NewListener(conf); tlsConfig == nil {
+	if lst, rpc, ler = nut.NewListener(conf); tlsConfig == nil {
 		if tlsConfig, err = nut.NewTLSConfigDefault(conf.TLSPublicKeyPEM, conf.TLSPrivateKeyPEM); err != nil {
 			err = fmt.Errorf(errTemplate, conf.TLSPublicKeyPEM, conf.TLSPrivateKeyPEM, err)
 			return
 		}
+	}
+	if err = ler; ler != nil {
+		return
 	}
 	ret = tls.NewListener(lst, tlsConfig)
 

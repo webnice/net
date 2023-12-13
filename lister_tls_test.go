@@ -234,13 +234,14 @@ func TestNewListenerTLS(t *testing.T) {
 	defer func() { key.Clean(); crt.Clean() }()
 	cfg = new(Configuration)
 	defaultConfiguration(cfg)
+	cfg.Port = 18080
 	nut = New().
 		Handler(getTestHandlerFn(false))
 	if lst, _, err = nut.
 		NewListenerTLS(cfg, nil); err == nil {
 		t.Errorf("функция NewListenerTLS(), функция повреждена")
 	}
-	cfg.TLSPrivateKeyPEM, cfg.TLSPublicKeyPEM = key.Filename, crt.Filename
+	cfg.TLSPrivateKeyPEM, cfg.TLSPublicKeyPEM, cfg.Port = key.Filename, crt.Filename, 18081
 	if lst, _, err = nut.
 		NewListenerTLS(cfg, nil); err != nil {
 		t.Errorf("функция NewListenerTLS(), ошибка: %v, ожидалось: %v", err, nil)
@@ -248,6 +249,13 @@ func TestNewListenerTLS(t *testing.T) {
 	nut = nut.Serve(lst)
 	if err = nut.Error(); err != nil {
 		t.Errorf("функция Serve(), функция повреждена")
+	}
+	if lst, _, err = nut.
+		NewListenerTLS(cfg, nil); err == nil {
+		t.Errorf(
+			"функция NewListenerTLS(), ошибка: %v, ожидалось: %v",
+			err, errors.New("listen tcp :18081: bind: address already in use"),
+		)
 	}
 	if err = nut.Stop().
 		Error(); err != nil {

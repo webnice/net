@@ -1,15 +1,16 @@
 ## Simple projects tooling for every day
 ## (c)Alex Geer <monoflash@gmail.com>
-## Version: 2023.11.10
+## Version: 2023.12.13
 
-DIR                 := $(strip $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST)))))
-GOPATH              := $(GOPATH)
-DATE                := $(shell date -u +%Y%m%d.%H%M%S.%Z)
-GOGENERATE           = $(shell if [ -f .gogenerate ]; then cat .gogenerate; fi)
-TESTPACKETS          = $(shell if [ -f .testpackages ]; then cat .testpackages; fi)
-BENCHPACKETS         = $(shell if [ -f .benchpackages ]; then cat .benchpackages; fi)
-GO111MODULE         ?= $(GO111MODULE:on)
-PACKAGES_LOCK_VER    = $(shell if [ -f .packages_lock_version ]; then cat .packages_lock_version; fi)
+DIR                  := $(strip $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST)))))
+GOPATH               := $(GOPATH)
+DATE                 := $(shell date -u +%Y%m%d.%H%M%S.%Z)
+GOGENERATE            = $(shell if [ -f .gogenerate ]; then cat .gogenerate; fi)
+TESTPACKETS           = $(shell if [ -f .testpackages ]; then cat .testpackages; fi)
+BENCHPACKETS          = $(shell if [ -f .benchpackages ]; then cat .benchpackages; fi)
+GO111MODULE          ?= $(GO111MODULE:on)
+PACKAGES_LOCK_VER     = $(shell if [ -f .packages_lock_version ]; then cat .packages_lock_version; fi)
+COVERALLS_REPO_TOKEN  = $(shell if [ -f .coveralls ]; then cat .coveralls; fi)
 
 default: help
 
@@ -54,6 +55,10 @@ test: link
 		tail -n +2 coverage-tmp.log | sort -r | awk '{if($$1 != last) {print $$0;last=$$1}}' >> coverage.log; \
 		rm -f coverage-tmp.log; true; \
 	done
+	@if [ "$(COVERALLS_REPO_TOKEN)" != "" ]; then\
+		echo "Загрузка в coveralls.io процента покрытия кода тестами."; \
+		goveralls -repotoken $(COVERALLS_REPO_TOKEN) >/dev/null 2>&1; true; \
+	fi
 .PHONY: test
 
 	## Displaying in the browser coverage of tested code, on the html report (run only during development)
