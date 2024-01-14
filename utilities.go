@@ -38,27 +38,32 @@ func defaultConfiguration(conf *Configuration) {
 // Разбор адреса, определение порта через net.LookupPort, в том числе портов заданных через синонимы,
 // например ":http".
 func parseAddress(addr string, mode string) (ret *Configuration, err error) {
-	const addrSep = ":"
+	const bColon = ":"
 	var (
 		sp []string
 		n  int
-		e  error
 	)
 
-	ret = new(Configuration)
+	addr = strings.TrimSpace(addr)
+	ret, sp = new(Configuration), make([]string, 2)
 	defer defaultConfiguration(ret)
 	if mode != "" {
 		ret.Mode = mode
 	}
-	if sp = strings.Split(addr, addrSep); len(sp) <= 1 {
-		ret.Host = sp[0]
+	if sp[0], sp[1], err = net.SplitHostPort(addr); err != nil {
+		ret.Host, err = addr, nil
 		return
 	}
-	n, e = net.LookupPort(netTcp, strings.Join(sp[1:], addrSep))
-	if err = e; err != nil {
+	if n, err = net.LookupPort(netTcp, strings.Join(sp[1:], bColon)); err != nil {
 		return
 	}
 	ret.Host, ret.Port = sp[0], uint16(n)
+	switch sp, err = net.LookupHost(sp[0]); err {
+	case nil:
+		ret.Host = sp[0]
+	default:
+		err = nil
+	}
 
 	return
 }
