@@ -6,6 +6,8 @@ import (
 	"net"
 	"os"
 	"path"
+
+	"github.com/google/uuid"
 )
 
 // ListenAndServe Открытие адреса или сокета без использования конфигурации сервера (конфигурация по
@@ -254,6 +256,10 @@ func (nut *impl) run(onUp chan struct{}) {
 			nut.err = Errors().ServerHandlerIsNotSet()
 			return
 		}
+	}
+	// Проверка и создание уникального ID сервера.
+	if nut.conf.ID == "" {
+		nut.conf.ID = uuid.NewString()
 	}
 	// Запуск основной функции сервера.
 	if err = nut.safeHandlerRun(); !nut.isShutdown.Load() && err != nil {

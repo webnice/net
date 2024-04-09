@@ -24,6 +24,10 @@ func New() Interface {
 	return nut
 }
 
+// ID Уникальный идентификатор сервера.
+// Если идентификатор не был указан в конфигурации, создаётся при запуске.
+func (nut *impl) ID() string { return nut.conf.ID }
+
 // Handler Назначение основной функции TCP или сокет сервера. Функция должна назначаться до запуска сервера.
 func (nut *impl) Handler(fn HandlerFn) Interface { nut.handler = fn; return nut }
 

@@ -7,7 +7,11 @@ import (
 
 // Interface Интерфейс пакета.
 type Interface interface {
-	// ФУНКЦИЯ СЕРВЕРА
+	// ФУНКЦИИ СЕРВЕРА
+
+	// ID Уникальный идентификатор сервера.
+	// Если идентификатор не был указан в конфигурации, создаётся при запуске.
+	ID() string
 
 	// Handler Назначение основной функции TCP или сокет сервера. Функция должна назначаться до запуска сервера.
 	Handler(fn HandlerFn) Interface
@@ -48,7 +52,7 @@ type Interface interface {
 	// из службы linux - systemd.
 	ListenersSystemdTLSWithoutNames(tlsConfig *tls.Config) (ret []net.Listener, err error)
 
-	// ListenersSystemdTLSWithNames Возвращает карту срезов net.nnlistener для TLS сокетов переданных в процесс сервера
+	// ListenersSystemdTLSWithNames Возвращает карту срезов net.listener для TLS сокетов переданных в процесс сервера
 	// из службы linux - systemd.
 	ListenersSystemdTLSWithNames(tlsConfig *tls.Config) (ret map[string][]net.Listener, err error)
 

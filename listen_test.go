@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 func getTestHandlerFn(isPanic bool) HandlerFn {
@@ -326,5 +328,51 @@ func TestWait(t *testing.T) {
 	w1.Wait()
 	if cou <= 4 {
 		t.Errorf("функция Wait() повреждена")
+	}
+}
+
+// Создание ID, если не указан.
+func TestImpl_RunUuidGen(t *testing.T) {
+	const testAddress1 = `localhost:18080`
+	var nut Interface
+
+	nut = New().
+		Handler(getTestHandlerFn(false)).
+		ListenAndServe(testAddress1)
+	defer nut.Stop()
+	if nut.Error() != nil {
+		t.Errorf("функция ListenAndServe(), ошибка: %v, ожидалось: %v", nut.Error(), nil)
+	}
+	if nut.ID() == "" {
+		t.Errorf("функция ID(), ошибка, ожидалось не пустое значение")
+	}
+}
+
+// Проверка статического ID, если указан.
+func TestImpl_ListenAndServeWithConfigUuidStatic(t *testing.T) {
+	const testAddress1 = `.test.socket`
+	var (
+		err  error
+		id   string
+		conf *Configuration
+		nut  Interface
+	)
+
+	id = uuid.NewString()
+	conf, _ = parseAddress("", "")
+	conf.ID, conf.Mode, conf.Socket = id, "socket", testAddress1
+	nut = New().
+		Handler(getTestHandlerFn(false))
+	nut.ListenAndServeWithConfig(conf)
+	if nut.Error() != nil {
+		t.Errorf("функция ListenAndServeWithConfig(), ошибка: %v, ожидалось: %v", nut.Error(), nil)
+	}
+	if nut.ID() != id {
+		t.Errorf("функция ID(), вернулось: %q, ожидалось: %q", nut.ID(), id)
+	}
+	if err = nut.
+		Stop().
+		Error(); err != nil {
+		t.Errorf("функция Stop(), ошибка: %v, ожидалось: %v", err, nil)
 	}
 }
