@@ -191,14 +191,26 @@ func (nut *impl) Listen(tlsConfig *tls.Config) Interface {
 }
 
 // Serve Запуск функции сервера для входящих соединений на основе переданного слушателя net.Listener.
-func (nut *impl) Serve(ltn net.Listener) Interface { return nut.serve(netListenerTcp(ltn)) }
+func (nut *impl) Serve(ltn net.Listener) Interface { return nut.ServeWithId(ltn, "") }
+
+// ServeWithId Запуск функции сервера для входящих соединений на основе переданного слушателя net.Listener с
+// указанием ID сервера.
+func (nut *impl) ServeWithId(ltn net.Listener, id string) Interface {
+	return nut.serve(netListenerTcp(ltn), id)
+}
 
 // ServeUdp Запуск функции сервера для входящих UDP пакетов на основе переданного слушателя net.PacketConn.
-func (nut *impl) ServeUdp(lpc net.PacketConn) Interface { return nut.serve(netListenerUdp(lpc)) }
+func (nut *impl) ServeUdp(lpc net.PacketConn) Interface { return nut.ServeUdpWithId(lpc, "") }
+
+// ServeUdpWithId Запуск функции сервера для входящих UDP пакетов на основе переданного слушателя net.PacketConn с
+// указанием ID сервера.
+func (nut *impl) ServeUdpWithId(lpc net.PacketConn, id string) Interface {
+	return nut.serve(netListenerUdp(lpc), id)
+}
 
 // Запуск функции сервера для входящих соединений на основе слушателя netListener, который может содержать
 // соединения следующих типов: udp, tcp, socket.
-func (nut *impl) serve(nl *netListener) Interface {
+func (nut *impl) serve(nl *netListener, id string) Interface {
 	var (
 		conf *Configuration
 		onUp chan struct{}
@@ -215,6 +227,7 @@ func (nut *impl) serve(nl *netListener) Interface {
 	if nut.listener = nl; nut.conf == nil {
 		conf, _ = parseAddress(nut.listener.Addr().String(), nut.listener.Addr().Network())
 		defaultConfiguration(conf)
+		conf.ID = id
 		nut.conf = conf
 	}
 	if nut.onShutdown == nil {
@@ -242,6 +255,10 @@ func (nut *impl) run(onUp chan struct{}) {
 			_ = os.Remove(nut.conf.Socket)
 		}
 	}()
+	// Проверка и создание уникального ID сервера.
+	if nut.conf.ID == "" {
+		nut.conf.ID = uuid.NewString()
+	}
 	// Обеспечение синхронного запуска потока.
 	nut.isRun.Store(true)
 	onUp <- struct{}{}
@@ -256,10 +273,6 @@ func (nut *impl) run(onUp chan struct{}) {
 			nut.err = Errors().ServerHandlerIsNotSet()
 			return
 		}
-	}
-	// Проверка и создание уникального ID сервера.
-	if nut.conf.ID == "" {
-		nut.conf.ID = uuid.NewString()
 	}
 	// Запуск основной функции сервера.
 	if err = nut.safeHandlerRun(); !nut.isShutdown.Load() && err != nil {

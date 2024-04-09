@@ -71,8 +71,16 @@ type Interface interface {
 	// Serve Запуск функции сервера для входящих соединений на основе переданного слушателя net.Listener.
 	Serve(net.Listener) Interface
 
+	// ServeWithId Запуск функции сервера для входящих соединений на основе переданного слушателя net.Listener с
+	// указанием ID сервера.
+	ServeWithId(ltn net.Listener, id string) Interface
+
 	// ServeUdp Запуск функции сервера для входящих UDP пакетов на основе переданного слушателя net.PacketConn.
 	ServeUdp(lpc net.PacketConn) Interface
+
+	// ServeUdpWithId Запуск функции сервера для входящих UDP пакетов на основе переданного слушателя net.PacketConn с
+	// указанием ID сервера.
+	ServeUdpWithId(lpc net.PacketConn, id string) Interface
 
 	// Wait Блокируемая функция ожидания завершения веб сервера, если он запущен.
 	// Если сервер не запущен, функция завершается немедленно.
