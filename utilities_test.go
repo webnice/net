@@ -126,8 +126,8 @@ func TestParseAddress(t *testing.T) {
 
 func TestRecoverErrorWithStack(t *testing.T) {
 	var (
-		e1  interface{}
-		e2  interface{}
+		e1  any
+		e2  any
 		e3  error
 		err error
 	)

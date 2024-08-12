@@ -17,7 +17,7 @@ func TestErrors(t *testing.T) {
 }
 
 func TestErrAlreadyRunning(t *testing.T) {
-	var v interface{}
+	var v any
 
 	if Errors().AlreadyRunning() != &errAlreadyRunning {
 		t.Errorf("фунция ErrAlreadyRunning(), функция повреждена")
@@ -33,7 +33,7 @@ func TestErrAlreadyRunning(t *testing.T) {
 }
 
 func TestErrNoConfiguration(t *testing.T) {
-	var v interface{}
+	var v any
 
 	if Errors().NoConfiguration() != &errNoConfiguration {
 		t.Errorf("фунция ErrAlreadyRunning(), функция повреждена")
