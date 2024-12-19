@@ -1,5 +1,7 @@
 package net
 
+import "time"
+
 // Configuration Структура конфигурации TCP/IP или UDP сервера.
 type Configuration struct {
 	// ID Уникальный идентификатор сервера, может быть любым уникальным, в пределах приложения, строковым значением.
@@ -27,7 +29,7 @@ type Configuration struct {
 	Socket string `yaml:"Socket" json:"socket" default-value:"-"`
 
 	// SocketMode Файловые разрешения доступа к юникс-сокету.
-	// Значение задаётся в восьмеричной системе и не должно превышать 32 бита.
+	// Значение задаётся в восьмеричной системе счисления и не должно превышать 32 бита.
 	// Default value: "0666"
 	SocketMode string `yaml:"SocketMode" json:"socket_mode" default-value:"0666"`
 
@@ -55,16 +57,25 @@ type Configuration struct {
 	// Default value: ""
 	TLSPrivateKeyPEM string `yaml:"TLSPrivateKeyPEM" json:"tls_private_key_pem"`
 
-	// ProxyProtocol Переключение режима прослушивания на работу по прокси протоколу.
-	// Поддерживаются запросы от nginx и haproxy с реализацией прокси протокола версий 1 и 2.
+	// ProxyProtocol Включение прокси-протокола.
+	// Прокси-протокол позволяет серверу получать информацию о подключении клиента, передаваемую через
+	// прокси-серверы и средства балансировки нагрузки, такие как Nginx, HAProxy, Amazon Elastic Load
+	// Balancer (ELB) и многие другие.
+	// Поддерживаются запросы с реализацией прокси протокола версий 1 и 2.
 	// PROXY protocol: https://www.haproxy.org/download/2.3/doc/proxy-protocol.txt.
 	// Default value: false
 	ProxyProtocol bool `yaml:"ProxyProtocol" json:"proxy_protocol"`
+
+	// ProxyProtocolReadHeaderTimeout Максимальное время ожидания получения данных о клиенте через прокси-протокол.
+	// Время ожидание используется только при включённом прокси-протоколе.
+	// Default value: 0s - no timeout
+	ProxyProtocolReadHeaderTimeout time.Duration `yaml:"ProxyProtocolReadHeaderTimeout" json:"proxy_protocol_read_header_timeout"`
 }
 
 /**
 
    Пример конфигурации YAML:
+
 
       ## ID Уникальный идентификатор сервера, может быть любым уникальным, в пределах приложения, строковым значением.
       ## Если значение не указано, при запуске сервера, создаётся уникальное временное значение, меняющееся
@@ -91,7 +102,8 @@ type Configuration struct {
       ## Default value: ""
       Socket: !!str "run/example.sock"
 
-      ## Файловые разрешения доступа к юникс сокету, при его использовании.
+      ## Файловые разрешения доступа к юникс-сокету.
+      ## Значение задаётся в восьмеричной системе счисления и не должно превышать 32 бита.
       ## Default value: "0666"
       SocketMode: !!str "0666"
 
@@ -119,11 +131,19 @@ type Configuration struct {
       ## Default value: ""
       TLSPrivateKeyPEM: !!str "/etc/application/certificate.key"
 
-      ## Переключение режима прослушивания на работу по прокси протоколу.
-      ## Поддерживаются запросы от nginx и haproxy с реализацией прокси протокола версий 1 и 2.
+      ## Включение прокси-протокола.
+      ## Прокси-протокол позволяет серверу получать информацию о подключении клиента, передаваемую через
+      ## прокси-серверы и средства балансировки нагрузки, такие как Nginx, HAProxy, Amazon Elastic Load
+      ## Balancer (ELB) и многие другие.
+      ## Поддерживаются запросы с реализацией прокси протокола версий 1 и 2.
       ## PROXY protocol: https://www.haproxy.org/download/2.3/doc/proxy-protocol.txt.
       ## Default value: false
       ProxyProtocol: !!bool false
+
+      ## Максимальное время ожидания получения данных о клиенте через прокси-протокол.
+      ## Время ожидание используется только при включённом прокси-протоколе.
+      ## Default value: 0s - no timeout
+      ProxyProtocolReadHeaderTimeout: 0s
 
 
 **/

@@ -114,7 +114,17 @@ func (nut *impl) NewListener(conf *Configuration) (
 	}
 	// Включение ProxyProtocol.
 	if ret != nil && conf.ProxyProtocol {
-		ret = &proxyproto.Listener{Listener: ret}
+		//
+		// TODO: Необходимо реализовать функции ConnPolicy и ValidateHeader.
+		// TODO: ВНИМАНИЕ!!! Архитектора функции ConnPolicy придумана плохо, "одарённым" автором, возможна паника!
+		// TODO: ВНИМАНИЕ!!! Архитектора функции ValidateHeader придумана плохо, "одарённым" автором, возможна паника!
+		//
+		ret = &proxyproto.Listener{
+			Listener:          ret,
+			ReadHeaderTimeout: conf.ProxyProtocolReadHeaderTimeout,
+			ConnPolicy:        nil,
+			ValidateHeader:    nil,
+		}
 	}
 
 	return
