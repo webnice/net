@@ -8,6 +8,7 @@ import (
 	"path"
 
 	"github.com/google/uuid"
+	"github.com/pires/go-proxyproto"
 )
 
 // ListenAndServe Открытие адреса или сокета без использования конфигурации сервера (конфигурация по
@@ -110,6 +111,10 @@ func (nut *impl) NewListener(conf *Configuration) (
 		rpc, err = net.ListenPacket(conf.Mode, conf.HostPort())
 	default:
 		ret, err = net.Listen(conf.Mode, conf.HostPort())
+	}
+	// Включение ProxyProtocol.
+	if ret != nil && conf.ProxyProtocol {
+		ret = &proxyproto.Listener{Listener: ret}
 	}
 
 	return

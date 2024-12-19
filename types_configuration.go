@@ -54,6 +54,12 @@ type Configuration struct {
 	// Применяется только для TCP соединений, для UDP не используется.
 	// Default value: ""
 	TLSPrivateKeyPEM string `yaml:"TLSPrivateKeyPEM" json:"tls_private_key_pem"`
+
+	// ProxyProtocol Переключение режима прослушивания на работу по прокси протоколу.
+	// Поддерживаются запросы от nginx и haproxy с реализацией прокси протокола версий 1 и 2.
+	// PROXY protocol: https://www.haproxy.org/download/2.3/doc/proxy-protocol.txt.
+	// Default value: false
+	ProxyProtocol bool `yaml:"ProxyProtocol" json:"proxy_protocol"`
 }
 
 /**
@@ -86,8 +92,8 @@ type Configuration struct {
       Socket: !!str "run/example.sock"
 
       ## Файловые разрешения доступа к юникс сокету, при его использовании.
-      ## Default value: "640"
-      SocketMode: !!int 640
+      ## Default value: "0666"
+      SocketMode: !!str "0666"
 
       ## Режим открытия сокета, возможные значения: tcp, tcp4, tcp6, unix, unixpacket, socket, systemd.
       ## udp, udp4, udp6 - Сервер поднимается на указанном Host:Port;
@@ -112,6 +118,12 @@ type Configuration struct {
       ## Применяется только для TCP соединений, для UDP не используется.
       ## Default value: ""
       TLSPrivateKeyPEM: !!str "/etc/application/certificate.key"
+
+      ## Переключение режима прослушивания на работу по прокси протоколу.
+      ## Поддерживаются запросы от nginx и haproxy с реализацией прокси протокола версий 1 и 2.
+      ## PROXY protocol: https://www.haproxy.org/download/2.3/doc/proxy-protocol.txt.
+      ## Default value: false
+      ProxyProtocol: !!bool false
 
 
 **/

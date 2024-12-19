@@ -4,3 +4,6 @@ github.com/go-chi/chi/v5
 # github.com/google/uuid v1.6.0
 ## explicit
 github.com/google/uuid
+# github.com/pires/go-proxyproto v0.8.0
+## explicit; go 1.18
+github.com/pires/go-proxyproto

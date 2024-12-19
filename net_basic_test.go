@@ -10,9 +10,9 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func TestBasicWebServer(t *testing.T) {
+func TestImpl_ListenAndServe(t *testing.T) {
 	const addr = "127.0.0.1:8080"
-	const uri = "http://" + addr + "/"
+	const uri = "http" + "://" + addr + "/"
 
 	// Сервер.
 	nut := New().
@@ -53,7 +53,7 @@ func TestBasicWebServer(t *testing.T) {
 			t.Errorf("чтение ответа на запрос к %q прервано ошибкой: %s", uri, e)
 		}
 		if rq.StatusCode != 200 || !strings.Contains(string(buf), "Hello, World") {
-			t.Errorf("получен не корректный ответ сервера: %q", string(buf))
+			t.Errorf("получен не корректный ответ сервера: %q, ожидался: %q", string(buf), "Hello, World")
 		}
 	}()
 	// Ожидание завершения сервера.
@@ -62,4 +62,5 @@ func TestBasicWebServer(t *testing.T) {
 		t.Errorf("сервер завершился с ошибкой: %s", err)
 		return
 	}
+	nut.Stop()
 }

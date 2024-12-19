@@ -190,7 +190,7 @@ func TestUnixSocketSocketMode(t *testing.T) {
 func TestServe(t *testing.T) {
 	const (
 		testAddress1 = "127.0.0.1:18080"
-		testAddress2 = "127.0.0.1:18080"
+		testAddress2 = "localhost:18080"
 		errString    = "use of closed network connection"
 	)
 	var (
