@@ -32,7 +32,7 @@ func getTestHandlerFn(isPanic bool) HandlerFn {
 }
 
 func TestInvalidPort(t *testing.T) {
-	const invalidAddress = `:170000`
+	const invalidAddress = ":170000"
 	var nut Interface
 
 	nut = New().
@@ -57,8 +57,8 @@ func TestNoConfigurationError(t *testing.T) {
 
 func TestAlreadyRunningError(t *testing.T) {
 	const (
-		testAddress1 = `localhost:18080`
-		testAddress2 = `localhost:18081`
+		testAddress1 = "127.0.0.1:18080"
+		testAddress2 = "127.0.0.1:18081"
 	)
 	var nut Interface
 
@@ -85,7 +85,7 @@ func TestAlreadyRunningError(t *testing.T) {
 }
 
 func TestPortIsBusy(t *testing.T) {
-	const testAddress1 = `localhost:18080`
+	const testAddress1 = "127.0.0.1:18080"
 	var w1, w2 Interface
 
 	w1 = New().
@@ -106,7 +106,10 @@ func TestPortIsBusy(t *testing.T) {
 }
 
 func TestUnixSocket(t *testing.T) {
-	const testAddress1 = `.test.socket`
+	const (
+		testAddress1         = ".test.socket"
+		testAddress1FileMode = os.FileMode(0666)
+	)
 	var (
 		err  error
 		conf *Configuration
@@ -126,10 +129,10 @@ func TestUnixSocket(t *testing.T) {
 	if fi, err = os.Stat(testAddress1); err != nil {
 		t.Errorf("проверка юникс сокета завершилась ошибкой: %s", err)
 	}
-	if fi.Mode().Perm() != os.FileMode(0640).Perm() {
-		t.Logf(
+	if fi.Mode().Perm() != testAddress1FileMode.Perm() {
+		t.Errorf(
 			"разрешения доступа юникс сокета, Mode(): %v, ожидалось: %v",
-			fi.Mode().Perm(), os.FileMode(0640).Perm(),
+			fi.Mode().Perm(), testAddress1FileMode.Perm(),
 		)
 	}
 	if err = w1.
@@ -142,9 +145,51 @@ func TestUnixSocket(t *testing.T) {
 	}
 }
 
+func TestUnixSocketSocketMode(t *testing.T) {
+	const (
+		tMode            = "0600"
+		tAddress         = ".test.socket"
+		tAddressFileMode = os.FileMode(0600)
+	)
+	var (
+		err  error
+		conf *Configuration
+		w1   Interface
+		fi   os.FileInfo
+	)
+
+	conf, _ = parseAddress("", "")
+	conf.Mode = "socket"
+	conf.Socket = tAddress
+	conf.SocketMode = tMode
+	w1 = New().
+		Handler(getTestHandlerFn(false))
+	w1.ListenAndServeWithConfig(conf)
+	if w1.Error() != nil {
+		t.Errorf("функция ListenAndServeWithConfig(), ошибка: %v, ожидалось: %v", w1.Error(), nil)
+	}
+	if fi, err = os.Stat(tAddress); err != nil {
+		t.Errorf("проверка юникс сокета завершилась ошибкой: %s", err)
+	}
+	if fi.Mode().Perm() != tAddressFileMode.Perm() {
+		t.Errorf(
+			"разрешения доступа юникс сокета, Mode(): %v, ожидалось: %v",
+			fi.Mode().Perm(), tAddressFileMode.Perm(),
+		)
+	}
+	if err = w1.
+		Stop().
+		Error(); err != nil {
+		t.Errorf("функция Stop(), ошибка: %v, ожидалось: %v", err, nil)
+	}
+	if _, err = os.Stat(tAddress); os.IsExist(err) {
+		t.Errorf("юникс сокет не был удалён после остановки сервера")
+	}
+}
+
 func TestServe(t *testing.T) {
 	const (
-		testAddress1 = "localhost:18080"
+		testAddress1 = "127.0.0.1:18080"
 		testAddress2 = "127.0.0.1:18080"
 		errString    = "use of closed network connection"
 	)
@@ -184,7 +229,7 @@ func TestServe(t *testing.T) {
 }
 
 func TestServeAlreadyRunning(t *testing.T) {
-	const testAddress1 = "localhost:18080"
+	const testAddress1 = "127.0.0.1:18080"
 	var (
 		err error
 		ltn net.Listener
@@ -212,7 +257,7 @@ func TestServeAlreadyRunning(t *testing.T) {
 }
 
 func TestServeErrServerHandlerIsNotSet(t *testing.T) {
-	const testAddress1 = "localhost:18080"
+	const testAddress1 = "127.0.0.1:18080"
 	var (
 		err error
 		ltn net.Listener
@@ -231,7 +276,7 @@ func TestServeErrServerHandlerIsNotSet(t *testing.T) {
 }
 
 func TestServeErrServerHandlerUdpIsNotSet(t *testing.T) {
-	const testAddress1 = "localhost:18080"
+	const testAddress1 = "127.0.0.1:18080"
 	var (
 		err error
 		ltn net.PacketConn
@@ -251,7 +296,7 @@ func TestServeErrServerHandlerUdpIsNotSet(t *testing.T) {
 
 // Тестирование паники в основной функции сервера полученной от пользователя.
 func TestServeHandlerPanic(t *testing.T) {
-	const testAddress1 = "localhost:18080"
+	const testAddress1 = "127.0.0.1:18080"
 	var (
 		err error
 		ltn net.Listener
@@ -273,8 +318,8 @@ func TestServeHandlerPanic(t *testing.T) {
 
 func TestWait(t *testing.T) {
 	const (
-		testAddress1 = `localhost:18080`
-		testAddress2 = `.test.socket`
+		testAddress1 = "127.0.0.1:18080"
+		testAddress2 = ".test.socket"
 		ticTimeout   = time.Second / 4
 	)
 	var (
@@ -333,7 +378,7 @@ func TestWait(t *testing.T) {
 
 // Создание ID, если не указан.
 func TestImpl_RunUuidGen(t *testing.T) {
-	const testAddress1 = `localhost:18080`
+	const testAddress1 = "127.0.0.1:18080"
 	var nut Interface
 
 	nut = New().
@@ -350,7 +395,7 @@ func TestImpl_RunUuidGen(t *testing.T) {
 
 // Проверка статического ID, если указан.
 func TestImpl_ListenAndServeWithConfigUuidStatic(t *testing.T) {
-	const testAddress1 = `.test.socket`
+	const testAddress1 = ".test.socket"
 	var (
 		err  error
 		id   string

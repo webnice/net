@@ -68,7 +68,7 @@ func (nut *impl) Stop() Interface {
 	// Флаг начала завершения работы сервера.
 	nut.isShutdown.Store(true)
 	// Закрытие соединения.
-	_ = nut.listener.Close()
+	nut.err = nut.listener.Close()
 	safeClose(nut.onShutdown)
 	nut.onShutdown = nil
 

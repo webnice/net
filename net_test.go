@@ -78,7 +78,7 @@ func TestError(t *testing.T) {
 }
 
 func TestWaitNotRun(t *testing.T) {
-	const testAddress1 = `localhost:18080`
+	const testAddress1 = "127.0.0.1:18080"
 	var (
 		nut Interface
 		err error
@@ -94,7 +94,7 @@ func TestWaitNotRun(t *testing.T) {
 }
 
 func TestImpl_IsRunning(t *testing.T) {
-	const testAddress1 = "localhost:18080"
+	const testAddress1 = "127.0.0.1:18080"
 	var (
 		err error
 		ltn net.Listener

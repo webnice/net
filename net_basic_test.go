@@ -11,7 +11,7 @@ import (
 )
 
 func TestBasicWebServer(t *testing.T) {
-	const addr = "localhost:8080"
+	const addr = "127.0.0.1:8080"
 	const uri = "http://" + addr + "/"
 
 	// Сервер.

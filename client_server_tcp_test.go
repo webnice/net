@@ -127,7 +127,7 @@ func testTcpClient(nut Interface, tlsCfg *tls.Config, onStart chan<- struct{}, t
 		)
 
 		onStart <- struct{}{}
-		if conn, err = tls.Dial("tcp", "localhost:8001", tlsCfg); err != nil {
+		if conn, err = tls.Dial("tcp", "127.0.0.1:8001", tlsCfg); err != nil {
 			t.Errorf("функция DialTCP(), ошибка: %v, ожидалось: %v", err, nil)
 		}
 		if n, err = conn.Write([]byte(content)); err != nil {
@@ -175,7 +175,7 @@ func TestClientServerTcp(t *testing.T) {
 	tlsCfg = testTls(key.Filename, crt.Filename)
 	nut.
 		Handler(testTcpHandler).
-		ListenAndServeTLS("localhost:8001", crt.Filename, key.Filename, tlsCfg)
+		ListenAndServeTLS("127.0.0.1:8001", crt.Filename, key.Filename, tlsCfg)
 	// Контролируемый запуск клиента.
 	onStart = make(chan struct{})
 	data, response = testTcpClient(nut, tlsCfg, onStart, t)

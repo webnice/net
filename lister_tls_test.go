@@ -148,7 +148,7 @@ gf5z+NriNZFUQDACfnDynuYaa8Fj6IPXy/Y18WVsNqiIg8vYCcoNE8xpV2lP1uqj
 }
 
 func TestLoadX509KeyPair(t *testing.T) {
-	const testAddress1 = `localhost:18088`
+	const testAddress1 = "127.0.0.1:18088"
 	var (
 		err error
 		key *tmpFile
@@ -167,7 +167,7 @@ func TestLoadX509KeyPair(t *testing.T) {
 }
 
 func TestListenAndServeTLSOk(t *testing.T) {
-	const testAddress1 = `localhost:18088`
+	const testAddress1 = "127.0.0.1:18088"
 	var (
 		err error
 		key *tmpFile
@@ -191,7 +191,7 @@ func TestListenAndServeTLSOk(t *testing.T) {
 }
 
 func TestInvalidPortTLS(t *testing.T) {
-	const invalidAddress = `:170000`
+	const invalidAddress = ":170000"
 	var (
 		key *tmpFile
 		crt *tmpFile

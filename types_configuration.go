@@ -26,9 +26,10 @@ type Configuration struct {
 	// Default value: ""
 	Socket string `yaml:"Socket" json:"socket" default-value:"-"`
 
-	// SocketMode Файловые разрешения доступа к юникс сокету, при его использовании.
-	// Default value: "640"
-	SocketMode uint32 `yaml:"SocketMode" json:"socket_mode" default-value:"0640"`
+	// SocketMode Файловые разрешения доступа к юникс-сокету.
+	// Значение задаётся в восьмеричной системе и не должно превышать 32 бита.
+	// Default value: "0666"
+	SocketMode string `yaml:"SocketMode" json:"socket_mode" default-value:"0666"`
 
 	// Mode Режим открытия сокета, возможные значения: tcp, tcp4, tcp6, unix, unixpacket, socket, systemd.
 	// udp, udp4, udp6 - Сервер поднимается на указанном Host:Port;

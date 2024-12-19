@@ -5,14 +5,15 @@ import (
 	"net"
 	"os"
 	runtimeDebug "runtime/debug"
+	"strconv"
 	"strings"
 )
 
 // Наполнение конфигурации значениями по умолчанию.
 // Проверка и исправление значений.
 func defaultConfiguration(conf *Configuration) {
-	if conf.SocketMode == 0 {
-		conf.SocketMode = uint32(os.FileMode(0640))
+	if conf.SocketMode == "" {
+		conf.SocketMode = strconv.FormatUint(uint64(parseFileModeWithDefault("")), 8)
 	}
 	// Проверка Mode.
 	switch strings.ToLower(conf.Mode) {
@@ -33,6 +34,22 @@ func defaultConfiguration(conf *Configuration) {
 			conf.Address = conf.HostPort()
 		}
 	}
+}
+
+// Конвертация строки содержащей восьмеричное значение в 32 битное число os.FileMode.
+func parseFileModeWithDefault(mode string) (ret os.FileMode) {
+	var (
+		err  error
+		ui64 uint64
+	)
+
+	if ui64, err = strconv.ParseUint(mode, 8, 32); err != nil {
+		ret = os.FileMode(defaultSocketFileMode)
+		return
+	}
+	ret = os.FileMode(uint32(ui64))
+
+	return
 }
 
 // Разбор адреса, определение порта через net.LookupPort, в том числе портов заданных через синонимы,

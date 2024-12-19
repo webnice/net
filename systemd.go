@@ -16,8 +16,8 @@ func (nut *impl) ListenEnv() (ret *listenEnv, err error) {
 		listenPID     = "LISTEN_PID"
 		listenFds     = "LISTEN_FDS"
 		listenFdNames = "LISTEN_FDNAMES"
-		errPIDTpl     = `получение PID из переменной окружения %q прервано ошибкой: %s`
-		errFDSTpl     = `получение файлового дескриптора из переменной окружения %q прервано ошибкой: %s`
+		errPIDTpl     = "получение PID из переменной окружения %q прервано ошибкой: %s"
+		errFDSTpl     = "получение файлового дескриптора из переменной окружения %q прервано ошибкой: %s"
 	)
 
 	ret = new(listenEnv)
@@ -53,7 +53,7 @@ func (nut *impl) ListenEnv() (ret *listenEnv, err error) {
 func (nut *impl) ListenLoadFilesFdWithNames() (ret []*os.File, err error) {
 	const (
 		listenFdBegin  = 3
-		listenFdPrefix = `LISTEN_FD_`
+		listenFdPrefix = "LISTEN_FD_"
 	)
 	var (
 		env        *listenEnv

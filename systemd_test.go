@@ -116,7 +116,7 @@ func TestListenLoadFilesFdWithNames(t *testing.T) {
 
 	obj = New().(*impl)
 	obj.fnFl = func(_ *os.File) (ret net.Listener, err error) {
-		if ret, err = net.Listen("tcp", "localhost:18080"); err == nil {
+		if ret, err = net.Listen("tcp", "127.0.0.1:18080"); err == nil {
 			_ = ret.Close()
 		}
 		return
@@ -188,7 +188,7 @@ func TestNewListener(t *testing.T) {
 	defer func() { _ = os.Unsetenv(envListenFds) }()
 	// Подготовка.
 	okFn = func(_ *os.File) (ret net.Listener, err error) {
-		ret, err = net.Listen("tcp", "localhost:18080")
+		ret, err = net.Listen("tcp", "127.0.0.1:18080")
 		_ = ret.Close()
 		return
 	}
@@ -261,7 +261,7 @@ func TestListenersSystemdTLSWithoutNames(t *testing.T) {
 	defer func() { _ = os.Unsetenv(envListenFds) }()
 	// Подготовка.
 	okFn = func(_ *os.File) (ret net.Listener, err error) {
-		if ret, err = net.Listen("tcp", "localhost:18080"); err == nil {
+		if ret, err = net.Listen("tcp", "127.0.0.1:18080"); err == nil {
 			_ = ret.Close()
 		}
 		return

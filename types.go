@@ -21,6 +21,8 @@ const (
 	netSystemd    = "systemd"
 )
 
+const defaultSocketFileMode = 0666
+
 // Объект сущности, реализующий интерфейс Interface.
 type impl struct {
 	lck        *sync.Mutex                          // Защита от гонки.
