@@ -121,7 +121,7 @@ func TestListenLoadFilesFdWithNames(t *testing.T) {
 		}
 		return
 	}
-	obj.fnNf = func(_ uintptr, name string) *os.File { return os.NewFile(0, name) }
+	obj.fnNf = testNewFile
 	obj.fnFc = func(_ *os.File) error { return nil }
 	if _, err = obj.ListenLoadFilesFdWithNames(); err == nil {
 		t.Errorf("функция ListenersSystemdWithoutNames(), ожидалась ошибка")
@@ -194,8 +194,10 @@ func TestNewListener(t *testing.T) {
 	}
 	erFn = func(_ *os.File) (ret net.Listener, err error) { err = errors.New("ошибка"); return }
 	nut = New()
-	nut.(*impl).fnNf = func(_ uintptr, _ string) *os.File { return os.NewFile(0, s0) }
+	nut.(*impl).fnNf = func(_ uintptr, _ string) *os.File { return testNewFile(0, s0) }
 	nut.(*impl).fnFc = func(_ *os.File) error { return nil }
+	// Преобразование дескриптора в пакетный сокет отключается, ожидается ошибка потокового слушателя.
+	nut.(*impl).fnFpc = func(_ *os.File) (net.PacketConn, error) { return nil, errors.New("ошибка") }
 	// Название сокета не указано.
 	nut.(*impl).fnFl = erFn
 	if _, _, err = nut.NewListener(&Configuration{Mode: keySystemd}); err == nil {
@@ -271,8 +273,10 @@ func TestListenersSystemdTLSWithoutNames(t *testing.T) {
 	}
 	erFn = func(_ *os.File) (ret net.Listener, err error) { err = errors.New("ошибка"); return }
 	obj = New().(*impl)
-	obj.fnNf = func(_ uintptr, _ string) *os.File { return os.NewFile(0, s0) }
+	obj.fnNf = func(_ uintptr, _ string) *os.File { return testNewFile(0, s0) }
 	obj.fnFc = func(_ *os.File) error { return nil }
+	// Преобразование дескриптора в пакетный сокет отключается, ожидается ошибка потокового слушателя.
+	obj.fnFpc = func(_ *os.File) (net.PacketConn, error) { return nil, errors.New("ошибка") }
 	obj.fnFl = erFn
 	if _, err = obj.ListenersSystemdTLSWithoutNames(nil); err == nil {
 		t.Errorf("функция ListenersSystemdWithoutNames(), ожидалась ошибка")
@@ -357,7 +361,7 @@ func TestNewListenerSystemdNilListener(t *testing.T) {
 		return
 	}
 	nut = New()
-	nut.(*impl).fnNf = func(_ uintptr, name string) *os.File { return os.NewFile(0, name) }
+	nut.(*impl).fnNf = testNewFile
 	nut.(*impl).fnFc = func(_ *os.File) error { return nil }
 	// Название сокета не указано, ни один дескриптор не преобразован в слушателя.
 	nut.(*impl).fnFl = mxFn
@@ -409,7 +413,6 @@ func TestListenersSystemdPacket(t *testing.T) {
 		erFn  func(*os.File) (net.PacketConn, error)
 		n     int
 		erLFn func(*os.File) (net.Listener, error)
-		okLFn func(*os.File) (net.Listener, error)
 		lst   net.Listener
 		rpc   net.PacketConn
 	)
@@ -434,13 +437,8 @@ func TestListenersSystemdPacket(t *testing.T) {
 	}
 	erFn = func(_ *os.File) (ret net.PacketConn, err error) { err = errors.New("ошибка"); return }
 	erLFn = func(_ *os.File) (ret net.Listener, err error) { err = errors.New("ошибка"); return }
-	okLFn = func(_ *os.File) (ret net.Listener, err error) {
-		ret, err = net.Listen("tcp", "127.0.0.1:18080")
-		_ = ret.Close()
-		return
-	}
 	nut = New()
-	nut.(*impl).fnNf = func(_ uintptr, name string) *os.File { return os.NewFile(0, name) }
+	nut.(*impl).fnNf = testNewFile
 	nut.(*impl).fnFc = func(_ *os.File) error { return nil }
 	nut.(*impl).fnFl = erLFn
 	// Все дескрипторы не преобразуются ни в один вид слушателя.
@@ -507,4 +505,85 @@ func TestListenersSystemdPacket(t *testing.T) {
 		t.Errorf("функция NewListener(), ошибка: %v, ожидался потоковый слушатель", err)
 	}
 	_ = lst.Close()
+}
+
+// Тестирование ошибок загрузки пакетных слушателей systemd и пропуска пакетных сокетов
+// функциями потоковых слушателей.
+func TestListenersSystemdPacketErrors(t *testing.T) {
+	const (
+		keySystemd                 = "systemd"
+		s0, s1                     = "service0.socket", "service1.socket"
+		envListenPid, envListenFds = "LISTEN_PID", "LISTEN_FDS"
+		envListenFdnames           = "LISTEN_FDNAMES"
+		sepColon                   = ":"
+	)
+	var (
+		err   error
+		nut   Interface
+		sar   []string
+		llm   map[string][]net.Listener
+		udpFn func(*os.File) (net.PacketConn, error)
+		erLFn func(*os.File) (net.Listener, error)
+	)
+
+	// Без переменных окружения systemd - все функции загрузки возвращают ошибку.
+	nut = New()
+	_ = os.Unsetenv(envListenPid)
+	_ = os.Unsetenv(envListenFds)
+	_ = os.Unsetenv(envListenFdnames)
+	if _, err = nut.ListenersSystemdPacketWithoutNames(); err == nil {
+		t.Errorf("функция ListenersSystemdPacketWithoutNames(), ожидалась ошибка")
+	}
+	if _, err = nut.ListenersSystemdPacketWithNames(); err == nil {
+		t.Errorf("функция ListenersSystemdPacketWithNames(), ожидалась ошибка")
+	}
+	if _, err = nut.ListenersSystemdWithoutNames(); err == nil {
+		t.Errorf("функция ListenersSystemdWithoutNames(), ожидалась ошибка")
+	}
+	if _, err = nut.ListenersSystemdWithNames(); err == nil {
+		t.Errorf("функция ListenersSystemdWithNames(), ожидалась ошибка")
+	}
+	// Переменные окружения для сокета systemd.
+	sar = []string{s0, s1}
+	if err = os.Setenv(envListenFdnames, strings.Join(sar, sepColon)); err != nil {
+		t.Fatalf("невозможно установить переменные окружения %q", envListenFdnames)
+	}
+	defer func() { _ = os.Unsetenv(envListenFdnames) }()
+	if err = os.Setenv(envListenPid, fmt.Sprint(os.Getpid())); err != nil {
+		t.Fatalf("невозможно установить переменные окружения %q", envListenPid)
+	}
+	defer func() { _ = os.Unsetenv(envListenPid) }()
+	if err = os.Setenv(envListenFds, fmt.Sprint(len(sar))); err != nil {
+		t.Fatalf("невозможно установить переменные окружения %q", envListenFds)
+	}
+	defer func() { _ = os.Unsetenv(envListenFds) }()
+	// Подготовка. Все дескрипторы являются пакетными сокетами.
+	udpFn = func(_ *os.File) (ret net.PacketConn, err error) {
+		return net.ListenPacket("udp", "127.0.0.1:0")
+	}
+	erLFn = func(_ *os.File) (ret net.Listener, err error) { err = errors.New("ошибка"); return }
+	nut = New()
+	nut.(*impl).fnNf = testNewFile
+	nut.(*impl).fnFc = func(_ *os.File) error { return nil }
+	nut.(*impl).fnFl = erLFn
+	nut.(*impl).fnFpc = udpFn
+	// Пакетные сокеты пропускаются функциями потоковых слушателей.
+	if llm, err = nut.ListenersSystemdWithNames(); err != nil || len(llm) != 0 {
+		t.Errorf("функция ListenersSystemdWithNames(), ошибка: %v, ожидалась пустая карта", err)
+	}
+	if _, err = nut.ListenersSystemdWithoutNames(); err != nil || len(llm) != 0 {
+		t.Errorf("функция ListenersSystemdWithoutNames(), ошибка: %v, ожидался пустой срез", err)
+	}
+}
+
+// Хранилище объектов *os.File, созданных моками тестирования. Предотвращает срабатывание финализаторов
+// os.File, закрывающих файловые дескрипторы, что при переиспользовании дескрипторов процессом приводит
+// к повреждению посторонних соединений и нестабильным падениям тестов.
+var testFilesKeep []*os.File
+
+// Создание тестового объекта *os.File с указанным именем, без закрытия дескриптора при сборке мусора.
+func testNewFile(_ uintptr, name string) *os.File {
+	var f = os.NewFile(0, name)
+	testFilesKeep = append(testFilesKeep, f)
+	return f
 }

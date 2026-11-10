@@ -131,8 +131,8 @@ func (nut *impl) NewListener(conf *Configuration) (
 	if ret != nil && conf.ProxyProtocol {
 		//
 		// TODO: Необходимо реализовать функции ConnPolicy и ValidateHeader.
-		// TODO: ВНИМАНИЕ!!! Архитектора функции ConnPolicy придумана плохо, "одарённым" автором, возможна паника!
-		// TODO: ВНИМАНИЕ!!! Архитектора функции ValidateHeader придумана плохо, "одарённым" автором, возможна паника!
+		// TODO: ВНИМАНИЕ!!! Архитектура функции ConnPolicy придумана плохо, "одарённым" автором, возможна паника!
+		// TODO: ВНИМАНИЕ!!! Архитектура функции ValidateHeader придумана плохо, "одарённым" автором, возможна паника!
 		//
 		ret = &proxyproto.Listener{
 			Listener:          ret,

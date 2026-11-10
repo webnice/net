@@ -370,7 +370,7 @@ func TestNewListenerTLSNilListener(t *testing.T) {
 	// Все дескрипторы возвращают ошибку при любом способе преобразования.
 	mxFn = func(_ *os.File) (ret net.Listener, err error) { err = errors.New("ошибка"); return }
 	nut = New()
-	nut.(*impl).fnNf = func(_ uintptr, name string) *os.File { return os.NewFile(0, name) }
+	nut.(*impl).fnNf = testNewFile
 	nut.(*impl).fnFc = func(_ *os.File) error { return nil }
 	nut.(*impl).fnFl = mxFn
 	nut.(*impl).fnFpc = func(_ *os.File) (net.PacketConn, error) { return nil, errors.New("ошибка") }

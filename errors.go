@@ -50,10 +50,10 @@ func (e *Error) AlreadyRunning() error { return &errAlreadyRunning }
 // NoConfiguration Конфигурация сервера отсутствует либо равна nil.
 func (e *Error) NoConfiguration() error { return &errNoConfiguration }
 
-// ListenSystemdPID Переменная окружения LISTEN_PID пустая, либо содержит не верное значение.
+// ListenSystemdPID Переменная окружения LISTEN_PID пустая, либо содержит неверное значение.
 func (e *Error) ListenSystemdPID() error { return &errListenSystemdPID }
 
-// ListenSystemdFDS Переменная окружения LISTEN_FDS пустая, либо содержит не верное значение.
+// ListenSystemdFDS Переменная окружения LISTEN_FDS пустая, либо содержит неверное значение.
 func (e *Error) ListenSystemdFDS() error { return &errListenSystemdFDS }
 
 // ListenSystemdNotFound Получение сокета systemd по имени, имя не найдено.

@@ -112,7 +112,7 @@ func TestParseAddress(t *testing.T) {
 	conf, err = parseAddress("127.0.0.1:1080", "udp")
 	if conf.Port != 1080 || conf.Mode != "udp" || err != nil {
 		t.Errorf(
-			"функция parseAddress(), Port: %q, Mode: %q, ожидалось: Port: %q, Mode: %q, ошибка: %v",
+			"функция parseAddress(), Port: %d, Mode: %q, ожидалось: Port: %d, Mode: %q, ошибка: %v",
 			conf.Port, conf.Mode,
 			1080, "udp",
 			err,
