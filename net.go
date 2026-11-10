@@ -14,6 +14,7 @@ func New() Interface {
 		isRun:      new(atomic.Bool),
 		isShutdown: new(atomic.Bool),
 		fnFl:       net.FileListener,
+		fnFpc:      net.FilePacketConn,
 		fnNf:       os.NewFile,
 		fnFc:       fileClose,
 	}

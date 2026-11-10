@@ -4,8 +4,8 @@ package net
 const (
 	cAlreadyRunning                = "Сервер уже запущен."
 	cNoConfiguration               = "Конфигурация сервера отсутствует либо равна nil."
-	cListenSystemdPID              = "Переменная окружения LISTEN_PID пустая, либо содержит не верное значение."
-	cListenSystemdFDS              = "Переменная окружения LISTEN_FDS пустая, либо содержит не верное значение."
+	cListenSystemdPID              = "Переменная окружения LISTEN_PID пустая, либо содержит неверное значение."
+	cListenSystemdFDS              = "Переменная окружения LISTEN_FDS пустая, либо содержит неверное значение."
 	cListenSystemdNotFound         = "Получение сокета systemd по имени, имя не найдено."
 	cListenSystemdQuantityNotMatch = "Полученное количество LISTEN_FDS не соответствует переданному LISTEN_FDNAMES."
 	cTLSIsNil                      = "Конфигурация TLS сервера пустая."

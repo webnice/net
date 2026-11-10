@@ -349,7 +349,27 @@ func TestNewListenerSystemdNilListener(t *testing.T) {
 		t.Fatalf("невозможно установить переменные окружения %q", envListenFds)
 	}
 	defer func() { _ = os.Unsetenv(envListenFds) }()
-	// Подготовка. Первый дескриптор возвращает ошибку, второй — успех.
+	// Подготовка. Все дескрипторы возвращают ошибку при любом способе преобразования.
+	mxFn = func(_ *os.File) (ret net.Listener, err error) { err = errors.New("ошибка"); return }
+	okFn = func(_ *os.File) (ret net.Listener, err error) {
+		ret, err = net.Listen("tcp", "127.0.0.1:18080")
+		_ = ret.Close()
+		return
+	}
+	nut = New()
+	nut.(*impl).fnNf = func(_ uintptr, name string) *os.File { return os.NewFile(0, name) }
+	nut.(*impl).fnFc = func(_ *os.File) error { return nil }
+	// Название сокета не указано, ни один дескриптор не преобразован в слушателя.
+	nut.(*impl).fnFl = mxFn
+	nut.(*impl).fnFpc = func(_ *os.File) (net.PacketConn, error) { return nil, errors.New("ошибка") }
+	if _, _, err = nut.NewListener(&Configuration{Mode: keySystemd}); !errors.Is(err, Errors().ListenerIsNotCreated()) {
+		t.Errorf("функция NewListener(), ошибка: %v, ожидалась: %v", err, Errors().ListenerIsNotCreated())
+	}
+	// Название сокета указано, ни один дескриптор не преобразован в слушателя.
+	if _, _, err = nut.NewListener(&Configuration{Mode: keySystemd, Socket: s0}); !errors.Is(err, Errors().ListenerIsNotCreated()) {
+		t.Errorf("функция NewListener(), ошибка: %v, ожидалась: %v", err, Errors().ListenerIsNotCreated())
+	}
+	// Первый дескриптор повреждён, второй исправен — слушатель создаётся со второго дескриптора.
 	mxFn = func(file *os.File) (ret net.Listener, err error) {
 		if file.Name() == s0 {
 			err = errors.New("ошибка")
@@ -359,7 +379,62 @@ func TestNewListenerSystemdNilListener(t *testing.T) {
 		_ = ret.Close()
 		return
 	}
-	okFn = func(_ *os.File) (ret net.Listener, err error) {
+	nut.(*impl).fnFl = mxFn
+	if _, _, err = nut.NewListener(&Configuration{Mode: keySystemd}); err != nil {
+		t.Errorf("функция NewListener(), ошибка: %v, ожидалось: %v", err, nil)
+	}
+	// Все дескрипторы в порядке — ошибки нет.
+	nut.(*impl).fnFl = okFn
+	if _, _, err = nut.NewListener(&Configuration{Mode: keySystemd, Socket: s0}); err != nil {
+		t.Errorf("функция NewListener(), ошибка: %v, ожидалось: %v", err, nil)
+	}
+}
+
+// Тестирование загрузки пакетных сокетов (udp, unixgram), переданных службой systemd.
+func TestListenersSystemdPacket(t *testing.T) {
+	const (
+		keySystemd                 = "systemd"
+		s0, s1                     = "service0.socket", "service1.socket"
+		envListenPid, envListenFds = "LISTEN_PID", "LISTEN_FDS"
+		envListenFdnames           = "LISTEN_FDNAMES"
+		sepColon                   = ":"
+	)
+	var (
+		err   error
+		nut   Interface
+		sar   []string
+		pcs   []net.PacketConn
+		pcm   map[string][]net.PacketConn
+		udpFn func(*os.File) (net.PacketConn, error)
+		erFn  func(*os.File) (net.PacketConn, error)
+		n     int
+		erLFn func(*os.File) (net.Listener, error)
+		okLFn func(*os.File) (net.Listener, error)
+		lst   net.Listener
+		rpc   net.PacketConn
+	)
+
+	// Переменные окружения для сокета systemd.
+	sar = []string{s0, s1}
+	if err = os.Setenv(envListenFdnames, strings.Join(sar, sepColon)); err != nil {
+		t.Fatalf("невозможно установить переменные окружения %q", envListenFdnames)
+	}
+	defer func() { _ = os.Unsetenv(envListenFdnames) }()
+	if err = os.Setenv(envListenPid, fmt.Sprint(os.Getpid())); err != nil {
+		t.Fatalf("невозможно установить переменные окружения %q", envListenPid)
+	}
+	defer func() { _ = os.Unsetenv(envListenPid) }()
+	if err = os.Setenv(envListenFds, fmt.Sprint(len(sar))); err != nil {
+		t.Fatalf("невозможно установить переменные окружения %q", envListenFds)
+	}
+	defer func() { _ = os.Unsetenv(envListenFds) }()
+	// Подготовка. Все дескрипторы являются пакетными сокетами.
+	udpFn = func(_ *os.File) (ret net.PacketConn, err error) {
+		return net.ListenPacket("udp", "127.0.0.1:0")
+	}
+	erFn = func(_ *os.File) (ret net.PacketConn, err error) { err = errors.New("ошибка"); return }
+	erLFn = func(_ *os.File) (ret net.Listener, err error) { err = errors.New("ошибка"); return }
+	okLFn = func(_ *os.File) (ret net.Listener, err error) {
 		ret, err = net.Listen("tcp", "127.0.0.1:18080")
 		_ = ret.Close()
 		return
@@ -367,14 +442,69 @@ func TestNewListenerSystemdNilListener(t *testing.T) {
 	nut = New()
 	nut.(*impl).fnNf = func(_ uintptr, name string) *os.File { return os.NewFile(0, name) }
 	nut.(*impl).fnFc = func(_ *os.File) error { return nil }
-	// Название сокета не указано, получен пустой слушатель без ошибки.
-	nut.(*impl).fnFl = mxFn
+	nut.(*impl).fnFl = erLFn
+	// Все дескрипторы не преобразуются ни в один вид слушателя.
+	nut.(*impl).fnFpc = erFn
 	if _, _, err = nut.NewListener(&Configuration{Mode: keySystemd}); !errors.Is(err, Errors().ListenerIsNotCreated()) {
 		t.Errorf("функция NewListener(), ошибка: %v, ожидалась: %v", err, Errors().ListenerIsNotCreated())
 	}
-	// Все дескрипторы в порядке — ошибки нет.
-	nut.(*impl).fnFl = okFn
-	if _, _, err = nut.NewListener(&Configuration{Mode: keySystemd, Socket: s0}); err != nil {
-		t.Errorf("функция NewListener(), ошибка: %v, ожидалось: %v", err, nil)
+	// Оба дескриптора — пакетные сокеты.
+	nut.(*impl).fnFpc = udpFn
+	if pcs, err = nut.ListenersSystemdPacketWithoutNames(); err != nil || len(pcs) != len(sar) {
+		t.Errorf("функция ListenersSystemdPacketWithoutNames(), ошибка: %v, ожидалось %d слушателя", err, len(sar))
 	}
+	for n = range pcs {
+		_ = pcs[n].Close()
+	}
+	// Потоковых слушателей среди пакетных дескрипторов нет.
+	var lls []net.Listener
+	if lls, err = nut.ListenersSystemdWithoutNames(); err != nil || len(lls) != 0 {
+		t.Errorf("функция ListenersSystemdWithoutNames(), ошибка: %v, ожидалось 0 слушателей", err)
+	}
+	// Пакетные слушатели по именам.
+	if pcm, err = nut.ListenersSystemdPacketWithNames(); err != nil {
+		t.Errorf("функция ListenersSystemdPacketWithNames(), ошибка: %v", err)
+	}
+	for n = range sar {
+		if ll, okk := pcm[sar[n]]; !okk || len(ll) == 0 {
+			t.Errorf("функция ListenersSystemdPacketWithNames(), в карте слушателей не найден сокет %q", sar[n])
+		} else {
+			_ = ll[0].Close()
+		}
+	}
+	// Создание слушателя сервера на основе пакетного сокета systemd, без указания имени.
+	if lst, rpc, err = nut.NewListener(&Configuration{Mode: keySystemd}); err != nil || lst != nil || rpc == nil {
+		t.Errorf("функция NewListener(), ошибка: %v, ожидался пакетный слушатель", err)
+	}
+	_ = rpc.Close()
+	// Создание слушателя сервера с указанием имени пакетного сокета.
+	if lst, rpc, err = nut.NewListener(&Configuration{Mode: keySystemd, Socket: s1}); err != nil || lst != nil || rpc == nil {
+		t.Errorf("функция NewListener(), ошибка: %v, ожидался пакетный слушатель", err)
+	}
+	_ = rpc.Close()
+	// Поиск несуществующего имени.
+	if _, _, err = nut.NewListener(&Configuration{Mode: keySystemd, Socket: "unknown.socket"}); !errors.Is(err, Errors().ListenSystemdNotFound()) {
+		t.Errorf("функция NewListener(), ошибка: %v, ожидалась: %v", err, Errors().ListenSystemdNotFound())
+	}
+	// Смешанные дескрипторы: первый потоковый, второй пакетный. Без указания имени выбирается потоковый.
+	nut.(*impl).fnFl = func(file *os.File) (net.Listener, error) {
+		if file.Name() == s0 {
+			return net.Listen("tcp", "127.0.0.1:0")
+		}
+		return nil, errors.New("ошибка")
+	}
+	if lst, rpc, err = nut.NewListener(&Configuration{Mode: keySystemd}); err != nil || lst == nil || rpc != nil {
+		t.Errorf("функция NewListener(), ошибка: %v, ожидался потоковый слушатель", err)
+	}
+	_ = lst.Close()
+	// С указанием имени пакетного сокета выбирается пакетный слушатель.
+	if lst, rpc, err = nut.NewListener(&Configuration{Mode: keySystemd, Socket: s1}); err != nil || lst != nil || rpc == nil {
+		t.Errorf("функция NewListener(), ошибка: %v, ожидался пакетный слушатель", err)
+	}
+	_ = rpc.Close()
+	// С указанием имени потокового сокета выбирается потоковый слушатель.
+	if lst, _, err = nut.NewListener(&Configuration{Mode: keySystemd, Socket: s0}); err != nil || lst == nil {
+		t.Errorf("функция NewListener(), ошибка: %v, ожидался потоковый слушатель", err)
+	}
+	_ = lst.Close()
 }

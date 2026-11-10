@@ -365,20 +365,13 @@ func TestNewListenerTLSNilListener(t *testing.T) {
 	if tlsCfg, err = New().NewTLSConfigDefault(crt.Filename, key.Filename); err != nil {
 		t.Fatalf("не удалось создать *tls.Config, ошибка: %s", err)
 	}
-	// Первый дескриптор возвращает ошибку, второй — успех.
-	mxFn = func(file *os.File) (ret net.Listener, err error) {
-		if file.Name() == s0 {
-			err = errors.New("ошибка")
-			return
-		}
-		ret, err = net.Listen("tcp", "127.0.0.1:18080")
-		_ = ret.Close()
-		return
-	}
+	// Все дескрипторы возвращают ошибку при любом способе преобразования.
+	mxFn = func(_ *os.File) (ret net.Listener, err error) { err = errors.New("ошибка"); return }
 	nut = New()
 	nut.(*impl).fnNf = func(_ uintptr, name string) *os.File { return os.NewFile(0, name) }
 	nut.(*impl).fnFc = func(_ *os.File) error { return nil }
 	nut.(*impl).fnFl = mxFn
+	nut.(*impl).fnFpc = func(_ *os.File) (net.PacketConn, error) { return nil, errors.New("ошибка") }
 	if _, _, err = nut.NewListenerTLS(&Configuration{Mode: keySystemd}, tlsCfg); !errors.Is(err, Errors().ListenerIsNotCreated()) {
 		t.Errorf("функция NewListenerTLS(), ошибка: %v, ожидалась: %v", err, Errors().ListenerIsNotCreated())
 	}

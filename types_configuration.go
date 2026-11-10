@@ -1,6 +1,9 @@
 package net
 
-import "time"
+import (
+	"net"
+	"time"
+)
 
 // Configuration Структура конфигурации TCP/IP или UDP сервера.
 type Configuration struct {
@@ -67,9 +70,16 @@ type Configuration struct {
 	ProxyProtocol bool `yaml:"ProxyProtocol" json:"proxy_protocol"`
 
 	// ProxyProtocolReadHeaderTimeout Максимальное время ожидания получения данных о клиенте через прокси-протокол.
-	// Время ожидание используется только при включённом прокси-протоколе.
+	// Время ожидания используется только при включённом прокси-протоколе.
 	// Default value: 0s - no timeout
 	ProxyProtocolReadHeaderTimeout time.Duration `yaml:"ProxyProtocolReadHeaderTimeout" json:"proxy_protocol_read_header_timeout"`
+
+	// ListenConfig Объект net.ListenConfig, используемый при создании сетевых слушателей соединений.
+	// Позволяет настроить низкоуровневые опции сокета, например: SO_REUSEPORT, параметры TCP keepalive,
+	// control callback и другие параметры, поддерживаемые net.ListenConfig.
+	// Применяется для режимов tcp, tcp4, tcp6, udp, udp4, udp6, unix, unixpacket, unixgram.
+	// Default value: nil - используются функции net.Listen и net.ListenPacket.
+	ListenConfig *net.ListenConfig `yaml:"-" json:"-"`
 }
 
 /**
@@ -141,7 +151,7 @@ type Configuration struct {
       ProxyProtocol: !!bool false
 
       ## Максимальное время ожидания получения данных о клиенте через прокси-протокол.
-      ## Время ожидание используется только при включённом прокси-протоколе.
+      ## Время ожидания используется только при включённом прокси-протоколе.
       ## Default value: 0s - no timeout
       ProxyProtocolReadHeaderTimeout: 0s
 

@@ -25,19 +25,20 @@ const defaultSocketFileMode = 0666
 
 // Объект сущности, реализующий интерфейс Interface.
 type impl struct {
-	lck        *sync.Mutex                          // Защита от гонки.
-	err        error                                // Сохранение последней ошибки.
-	errLck     sync.Mutex                           // Защита последней ошибки сервера от гонки.
-	isRun      *atomic.Bool                         // Состояние выполнения сервера, =истина - запущен, =ложь - остановлен.
-	handler    HandlerFn                            // Основная функция TCP сервера.
-	handlerUdp HandlerUdpFn                         // Основная функция UDP сервера.
-	listener   *netListener                         // Слушатель сокета сервера содержащий либо UDP либо TCP соединение.
-	isShutdown *atomic.Bool                         // Флаг начала завершения работы сервера.
-	onShutdown chan struct{}                        // Канал передачи сигнала об окончании завершения работы сервера.
-	conf       *Configuration                       // Конфигурация сервера.
-	fnFl       func(*os.File) (net.Listener, error) // Функция net.FileListener, подменяемая при тестировании.
-	fnNf       func(uintptr, string) *os.File       // Функция os.NewFile, подменяемая при тестировании.
-	fnFc       func(*os.File) error                 // Функция закрытия файлового дескриптора, подменяемая при тестировании.
+	lck        *sync.Mutex                            // Защита от гонки.
+	err        error                                  // Сохранение последней ошибки.
+	errLck     sync.Mutex                             // Защита последней ошибки сервера от гонки.
+	isRun      *atomic.Bool                           // Состояние выполнения сервера, =истина - запущен, =ложь - остановлен.
+	handler    HandlerFn                              // Основная функция TCP сервера.
+	handlerUdp HandlerUdpFn                           // Основная функция UDP сервера.
+	listener   *netListener                           // Слушатель сокета сервера содержащий либо UDP либо TCP соединение.
+	isShutdown *atomic.Bool                           // Флаг начала завершения работы сервера.
+	onShutdown chan struct{}                          // Канал передачи сигнала об окончании завершения работы сервера.
+	conf       *Configuration                         // Конфигурация сервера.
+	fnFl       func(*os.File) (net.Listener, error)   // Функция net.FileListener, подменяемая при тестировании.
+	fnFpc      func(*os.File) (net.PacketConn, error) // Функция net.FilePacketConn, подменяемая при тестировании.
+	fnNf       func(uintptr, string) *os.File         // Функция os.NewFile, подменяемая при тестировании.
+	fnFc       func(*os.File) error                   // Функция закрытия файлового дескриптора, подменяемая при тестировании.
 }
 
 // HandlerFn Описание типа функции TCP или сокет сервера.
@@ -51,4 +52,10 @@ type listenEnv struct {
 	pid   int      // ID процесса, получающего открытые соединения через файловые дескрипторы.
 	fds   int      // Количество передаваемых соединений.
 	names []string // Имена файловых дескрипторов.
+}
+
+// Слушатель соединения, загруженный из файлового дескриптора, переданного службой systemd.
+type listenSystemdItem struct {
+	name string       // Имя файлового дескриптора.
+	nl   *netListener // Слушатель соединения, потоковый либо пакетный.
 }

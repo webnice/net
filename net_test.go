@@ -37,6 +37,9 @@ func TestNew(t *testing.T) {
 	if nio.conf != nil {
 		t.Errorf("фунция New(), conf=%v, ожидался nil", nio.conf)
 	}
+	if nio.fnFl == nil || nio.fnFpc == nil || nio.fnNf == nil || nio.fnFc == nil {
+		t.Errorf("фунция New(), не корректная инициализация функций пакета")
+	}
 }
 
 // Тестирование назначения основной функции сервера.

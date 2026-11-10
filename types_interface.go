@@ -40,20 +40,28 @@ type Interface interface {
 	// обслуживания входящих соединений.
 	ListenAndServeTLSWithConfig(conf *Configuration, tlsConfig *tls.Config) Interface
 
-	// ListenersSystemdWithoutNames Возвращает срез net.Listener сокетов переданных в процесс сервера
+	// ListenersSystemdWithoutNames Возвращает срез net.Listener сокетов, переданных в процесс сервера
 	// из службы linux - systemd.
 	ListenersSystemdWithoutNames() (ret []net.Listener, err error)
 
-	// ListenersSystemdWithNames Возвращает карту срезов net.Listener сокетов переданных в процесс сервера
+	// ListenersSystemdPacketWithoutNames Возвращает срез net.PacketConn пакетных сокетов (udp, unixgram),
+	// переданных в процесс сервера из службы linux - systemd.
+	ListenersSystemdPacketWithoutNames() (ret []net.PacketConn, err error)
+
+	// ListenersSystemdWithNames Возвращает карту срезов net.Listener сокетов, переданных в процесс сервера
 	// из службы linux - systemd.
 	ListenersSystemdWithNames() (ret map[string][]net.Listener, err error)
 
-	// ListenersSystemdTLSWithoutNames Возвращает срез net.Listener для TLS сокетов переданных в процесс сервера
+	// ListenersSystemdPacketWithNames Возвращает карту срезов net.PacketConn пакетных сокетов (udp, unixgram),
+	// переданных в процесс сервера из службы linux - systemd.
+	ListenersSystemdPacketWithNames() (ret map[string][]net.PacketConn, err error)
+
+	// ListenersSystemdTLSWithoutNames Возвращает срез net.Listener для TLS сокетов, переданных в процесс сервера
 	// из службы linux - systemd.
 	ListenersSystemdTLSWithoutNames(tlsConfig *tls.Config) (ret []net.Listener, err error)
 
-	// ListenersSystemdTLSWithNames Возвращает карту срезов net.listener для TLS сокетов переданных в процесс сервера
-	// из службы linux - systemd.
+	// ListenersSystemdTLSWithNames Возвращает карту срезов net.Listener для TLS сокетов, переданных в процесс
+	// сервера из службы linux - systemd.
 	ListenersSystemdTLSWithNames(tlsConfig *tls.Config) (ret map[string][]net.Listener, err error)
 
 	// NewListener Создание нового слушателя соединений net.Listener на основе конфигурации сервера.

@@ -5,6 +5,8 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync/atomic"
+	"syscall"
 	"testing"
 	"time"
 
@@ -572,5 +574,67 @@ func TestServeNoHandlerFinalization(t *testing.T) {
 	defer nut.Stop()
 	if err = nut.Error(); err != nil {
 		t.Errorf("функция Serve(), ошибка: %v, ожидалось: %v", err, nil)
+	}
+}
+
+// Тестирование создания слушателей соединений с использованием net.ListenConfig из конфигурации.
+func TestNewListenerListenConfig(t *testing.T) {
+	const tSocket = ".test-listen-config.socket"
+	var (
+		err    error
+		lst    net.Listener
+		rpc    net.PacketConn
+		nut    Interface
+		conf   *Configuration
+		called atomic.Bool
+		lc     *net.ListenConfig
+	)
+
+	nut = New()
+	defer func() { _ = os.Remove(tSocket) }()
+	lc = &net.ListenConfig{
+		Control: func(network, address string, c syscall.RawConn) error {
+			called.Store(true)
+			return nil
+		},
+	}
+	// TCP через net.ListenConfig.
+	conf = &Configuration{Mode: netTcp, Host: "127.0.0.1", Port: 18084, ListenConfig: lc}
+	if lst, rpc, err = nut.NewListener(conf); err != nil || lst == nil || rpc != nil {
+		t.Errorf("функция NewListener(), режим %q с ListenConfig, ошибка: %v", netTcp, err)
+	}
+	if !called.Load() {
+		t.Errorf("функция NewListener(), control callback net.ListenConfig не был вызван")
+	}
+	_ = lst.Close()
+	// UDP через net.ListenConfig.
+	called.Store(false)
+	conf = &Configuration{Mode: netUdp, Host: "127.0.0.1", Port: 18084, ListenConfig: lc}
+	if lst, rpc, err = nut.NewListener(conf); err != nil || lst != nil || rpc == nil {
+		t.Errorf("функция NewListener(), режим %q с ListenConfig, ошибка: %v", netUdp, err)
+	}
+	if !called.Load() {
+		t.Errorf("функция NewListener(), control callback net.ListenConfig не был вызван")
+	}
+	_ = rpc.Close()
+	// Unix через net.ListenConfig.
+	called.Store(false)
+	conf = &Configuration{Mode: netUnix, Socket: tSocket, ListenConfig: lc}
+	if lst, rpc, err = nut.NewListener(conf); err != nil || lst == nil || rpc != nil {
+		t.Errorf("функция NewListener(), режим %q с ListenConfig, ошибка: %v", netUnix, err)
+	}
+	if !called.Load() {
+		t.Errorf("функция NewListener(), control callback net.ListenConfig не был вызван")
+	}
+	_ = lst.Close()
+	// Ошибка control callback пробрасывается из функции создания слушателя.
+	lc = &net.ListenConfig{
+		Control: func(network, address string, c syscall.RawConn) error {
+			return errors.New("ошибка control")
+		},
+	}
+	conf = &Configuration{Mode: netTcp, Host: "127.0.0.1", Port: 18084, ListenConfig: lc}
+	if _, _, err = nut.NewListener(conf); err == nil {
+		t.Errorf("функция NewListener(), ожидалась ошибка control callback")
 	}
 }

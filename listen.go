@@ -1,6 +1,7 @@
 package net
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net"
@@ -74,43 +75,57 @@ func (nut *impl) NewListener(conf *Configuration) (
 	rpc net.PacketConn,
 	err error,
 ) {
-	var (
-		lstWithNames map[string][]net.Listener
-		listeners    []net.Listener
-		ok           bool
-	)
+	var all []listenSystemdItem
 
 	defaultConfiguration(conf)
 	switch conf.Mode {
 	case netSystemd:
-		switch conf.Socket {
-		case "":
-			// Название сокета(ов) не указано.
-			if listeners, err = nut.ListenersSystemdWithoutNames(); err != nil {
-				return
+		// Загрузка слушателей соединений из файловых дескрипторов, переданных службой systemd.
+		if all, err = nut.listenSystemdLoadAll(); err != nil {
+			return
+		}
+		for n := range all {
+			// Выбор сокета по названию, если название указано.
+			if conf.Socket != "" && all[n].name != path.Base(conf.Socket) {
+				continue
 			}
-		default:
-			// Название сокета(ов) указано.
-			if lstWithNames, err = nut.ListenersSystemdWithNames(); err != nil {
-				return
-			}
-			// Выбор сокета по названию.
-			if listeners, ok = lstWithNames[path.Base(conf.Socket)]; !ok {
-				err = Errors().ListenSystemdNotFound()
-				return
+			switch all[n].nl.isUdp() {
+			case true:
+				// Пакетный сокет используется только при отсутствии потокового сокета.
+				if rpc == nil && ret == nil {
+					rpc = all[n].nl.Udp()
+				}
+			default:
+				if ret == nil {
+					ret = all[n].nl.Tcp()
+				}
 			}
 		}
-		if len(listeners) > 0 {
-			ret = listeners[0]
+		// Слушатель с указанным названием не найден.
+		if conf.Socket != "" && ret == nil && rpc == nil {
+			err = Errors().ListenSystemdNotFound()
+			return
 		}
 	case netUnix, netUnixPacket:
 		_ = os.Remove(conf.Socket)
-		ret, err = net.Listen(conf.Mode, conf.Socket)
+		if conf.ListenConfig != nil {
+			ret, err = conf.ListenConfig.Listen(context.Background(), conf.Mode, conf.Socket)
+		} else {
+			ret, err = net.Listen(conf.Mode, conf.Socket)
+		}
 		_ = os.Chmod(conf.Socket, parseFileModeWithDefault(conf.SocketMode))
 	case netUdp, netUdp4, netUdp6, netUnixgram:
-		rpc, err = net.ListenPacket(conf.Mode, conf.HostPort())
+		if conf.ListenConfig != nil {
+			rpc, err = conf.ListenConfig.ListenPacket(context.Background(), conf.Mode, conf.HostPort())
+		} else {
+			rpc, err = net.ListenPacket(conf.Mode, conf.HostPort())
+		}
 	default:
-		ret, err = net.Listen(conf.Mode, conf.HostPort())
+		if conf.ListenConfig != nil {
+			ret, err = conf.ListenConfig.Listen(context.Background(), conf.Mode, conf.HostPort())
+		} else {
+			ret, err = net.Listen(conf.Mode, conf.HostPort())
+		}
 	}
 	// Включение ProxyProtocol.
 	if ret != nil && conf.ProxyProtocol {
@@ -125,11 +140,6 @@ func (nut *impl) NewListener(conf *Configuration) (
 			ConnPolicy:        nil,
 			ValidateHeader:    nil,
 		}
-	}
-	// Защита от отсутствия слушателя без ошибки, например, при получении от systemd
-	// пустого списка соединений.
-	if ret == nil && rpc == nil && err == nil {
-		err = Errors().ListenerIsNotCreated()
 	}
 
 	return
