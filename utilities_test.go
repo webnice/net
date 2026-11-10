@@ -53,7 +53,7 @@ func TestDefaultConfiguration(t *testing.T) {
 	conf.Address = _TestAddress
 	conf.Host = _TestHost
 	conf.Port = 3210
-	conf.Mode = "unixpacket"
+	conf.Mode = netUnixPacket
 	defaultConfiguration(conf)
 	if conf.Mode != "tcp" {
 		t.Errorf("ошибка конфигурации по умолчанию, Mode: %q, ожидался: %q", conf.Mode, "tcp")

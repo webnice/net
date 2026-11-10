@@ -511,7 +511,6 @@ func TestListenersSystemdPacket(t *testing.T) {
 // функциями потоковых слушателей.
 func TestListenersSystemdPacketErrors(t *testing.T) {
 	const (
-		keySystemd                 = "systemd"
 		s0, s1                     = "service0.socket", "service1.socket"
 		envListenPid, envListenFds = "LISTEN_PID", "LISTEN_FDS"
 		envListenFdnames           = "LISTEN_FDNAMES"

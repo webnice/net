@@ -270,7 +270,7 @@ func TestNewListenerTLS(t *testing.T) {
 
 // Тестирование создания TLS слушателя с переданной TLS конфигурацией.
 func TestNewListenerTLSWithProvidedConfig(t *testing.T) {
-	const testAddress1 = "127.0.0.1:18089"
+	const testAddressHost, testAddressPort = "127.0.0.1", 18089
 	var (
 		err    error
 		key    *tmpFile
@@ -284,7 +284,7 @@ func TestNewListenerTLSWithProvidedConfig(t *testing.T) {
 	key, crt = newTmpFile(getKeyEcdsa()), newTmpFile(getCrtEcdsa())
 	defer func() { key.Clean(); crt.Clean() }()
 	tlsCfg = testTls(key.Filename, crt.Filename)
-	cfg = &Configuration{Mode: netTcp, Host: "127.0.0.1", Port: 18089}
+	cfg = &Configuration{Mode: netTcp, Host: testAddressHost, Port: testAddressPort}
 	nut = New()
 	// Переданная TLS конфигурация, загрузка ключей не выполняется.
 	if lst, _, err = nut.NewListenerTLS(cfg, tlsCfg); err != nil || lst == nil {
@@ -297,7 +297,7 @@ func TestNewListenerTLSWithProvidedConfig(t *testing.T) {
 
 // Тестирование закрытия UDP соединения при ошибке загрузки TLS ключей.
 func TestNewListenerTLSUdpTlsError(t *testing.T) {
-	const testAddress1 = "127.0.0.1:18090"
+	const testAddress1, testAddressHost, testAddressPort = "127.0.0.1:18090", "127.0.0.1", 18089
 	var (
 		err error
 		key *tmpFile
@@ -310,7 +310,7 @@ func TestNewListenerTLSUdpTlsError(t *testing.T) {
 
 	key, crt = newTmpFile([]byte("123")), newTmpFile([]byte("321"))
 	defer func() { key.Clean(); crt.Clean() }()
-	cfg = &Configuration{Mode: netUdp, Host: "127.0.0.1", Port: 18090}
+	cfg = &Configuration{Mode: netUdp, Host: testAddressHost, Port: testAddressPort}
 	nut = New()
 	if lst, rpc, err = nut.NewListenerTLS(cfg, nil); err == nil {
 		t.Errorf("функция NewListenerTLS(), ожидалась ошибка загрузки TLS ключей")
