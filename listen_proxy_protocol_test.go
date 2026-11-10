@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	proxyproto "github.com/pires/go-proxyproto"
+	"github.com/pires/go-proxyproto"
 )
 
 func TestImpl_ListenAndServe_ProxyProtocol(t *testing.T) {
@@ -99,6 +99,7 @@ func TestImpl_ListenAndServe_ProxyProtocol(t *testing.T) {
 	defer func() { http.DefaultTransport = origTransport }()
 	// Клиент.
 	go func() {
+		//goland:noinspection ALL
 		defer func() { nut.Stop() }() // Остановка сервера.
 		rq, e := http.Get(uri)
 		if e != nil {

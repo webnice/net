@@ -31,7 +31,7 @@ type impl struct {
 	isRun      *atomic.Bool                           // Состояние выполнения сервера, =истина - запущен, =ложь - остановлен.
 	handler    HandlerFn                              // Основная функция TCP сервера.
 	handlerUdp HandlerUdpFn                           // Основная функция UDP сервера.
-	listener   *netListener                           // Слушатель сокета сервера содержащий либо UDP либо TCP соединение.
+	listener   *netListener                           // Слушатель сокета сервера содержащий либо UDP, либо TCP соединение.
 	isShutdown *atomic.Bool                           // Флаг начала завершения работы сервера.
 	onShutdown chan struct{}                          // Канал передачи сигнала об окончании завершения работы сервера.
 	conf       *Configuration                         // Конфигурация сервера.

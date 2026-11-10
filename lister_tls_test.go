@@ -34,6 +34,7 @@ func newTmpFile(content []byte) (ret *tmpFile) {
 	return
 }
 
+//goland:noinspection ALL
 func getKeyEcdsa() []byte {
 	return []byte(`-----BEGIN PRIVATE KEY-----
 MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDCJGaDfRSjCg2zYopdy
@@ -43,6 +44,7 @@ BE2ulX63u0MqdUd/GU6XIpn31kDt2MVqKgprixw7Ow3zIH47KDvdwa0=
 -----END PRIVATE KEY-----`)
 }
 
+//goland:noinspection ALL
 func getCrtEcdsa() []byte {
 	return []byte(`-----BEGIN CERTIFICATE-----
 MIICHjCCAaSgAwIBAgIUCUXV3GKvC6699j1lRVwby9bvbVQwCgYIKoZIzj0EAwIw

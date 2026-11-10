@@ -235,6 +235,7 @@ func (nut *impl) Serve(ltn net.Listener) Interface { return nut.ServeWithId(ltn,
 // ServeWithId Запуск функции сервера для входящих соединений на основе переданного слушателя net.Listener с
 // указанием ID сервера.
 func (nut *impl) ServeWithId(ltn net.Listener, id string) Interface {
+	//goland:noinspection ALL
 	return nut.serve(netListenerTcp(ltn), id)
 }
 
@@ -244,6 +245,7 @@ func (nut *impl) ServeUdp(lpc net.PacketConn) Interface { return nut.ServeUdpWit
 // ServeUdpWithId Запуск функции сервера для входящих UDP пакетов на основе переданного слушателя net.PacketConn с
 // указанием ID сервера.
 func (nut *impl) ServeUdpWithId(lpc net.PacketConn, id string) Interface {
+	//goland:noinspection ALL
 	return nut.serve(netListenerUdp(lpc), id)
 }
 

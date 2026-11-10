@@ -17,28 +17,29 @@ func TestNew(t *testing.T) {
 	nut = New()
 	nio = nut.(*impl)
 	if nut == nil {
-		t.Errorf("фунция New(), вернулся nil, ожидался интерфейс")
+		t.Errorf("функция New(), вернулся nil, ожидался интерфейс")
 	}
 	if nio.err != nil {
-		t.Errorf("фунция New(), ошибка не равна nil")
+		t.Errorf("функция New(), ошибка не равна nil")
 	}
 	if nio.isRun.Load() {
-		t.Errorf("фунция New(), isRun=%t, ожидалось: %t", nio.isRun.Load(), false)
+		t.Errorf("функция New(), isRun=%t, ожидалось: %t", nio.isRun.Load(), false)
 	}
 	if nio.handler != nil {
-		t.Errorf("фунция New(), handler=%v, ожидался nil", nio.handler)
+		//goland:noinspection GoPrintFunctions
+		t.Errorf("функция New(), handler=%v, ожидался nil", nio.handler)
 	}
 	if nio.isShutdown.Load() {
-		t.Errorf("фунция New(), isShutdown=%t, ожидалось: %t", nio.isShutdown.Load(), false)
+		t.Errorf("функция New(), isShutdown=%t, ожидалось: %t", nio.isShutdown.Load(), false)
 	}
 	if nio.onShutdown != nil {
-		t.Errorf("фунция New(), onShutdown=%v, ожидался nil", nio.onShutdown)
+		t.Errorf("функция New(), onShutdown=%v, ожидался nil", nio.onShutdown)
 	}
 	if nio.conf != nil {
-		t.Errorf("фунция New(), conf=%v, ожидался nil", nio.conf)
+		t.Errorf("функция New(), conf=%v, ожидался nil", nio.conf)
 	}
 	if nio.fnFl == nil || nio.fnFpc == nil || nio.fnNf == nil || nio.fnFc == nil {
-		t.Errorf("фунция New(), не корректная инициализация функций пакета")
+		t.Errorf("функция New(), не корректная инициализация функций пакета")
 	}
 }
 
@@ -162,12 +163,12 @@ func TestError(t *testing.T) {
 
 	err = errors.New(_TestString)
 	if nio.err = err; !errors.Is(err, nio.Error()) {
-		t.Errorf("фунция Error(), не корректный результат")
+		t.Errorf("функция Error(), не корректный результат")
 	}
 }
 
 func TestWaitNotRun(t *testing.T) {
-	const testAddress1 = "127.0.0.1:18080"
+	const errWait = "функция Wait(), ошибка: %v, ожидалось: %v"
 	var (
 		nut Interface
 		err error
@@ -178,7 +179,7 @@ func TestWaitNotRun(t *testing.T) {
 	if err = nut.
 		Wait().
 		Error(); err != nil {
-		t.Errorf("фунция Wait(), ошибка: %v, ожидалось: %v", err, nil)
+		t.Errorf(errWait, err, nil)
 	}
 }
 

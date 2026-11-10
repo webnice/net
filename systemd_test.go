@@ -71,7 +71,7 @@ func TestListenEnv(t *testing.T) {
 	if env, err = obj.ListenEnv(); !errors.Is(err, Errors().ListenSystemdQuantityNotMatch()) {
 		t.Errorf("функция ListenEnv(), ошибка: %v, ожидалось: %v", err, Errors().ListenSystemdQuantityNotMatch())
 	}
-	// Установка переменной окружения .
+	// Установка переменной окружения.
 	if err = os.Setenv(envListenFdnames, strings.Join(sar, sepColon)); err != nil {
 		t.Fatalf("невозможно установить переменные окружения %q", envListenFdnames)
 	}
@@ -305,7 +305,7 @@ func TestListenersSystemdTLSWithoutNames(t *testing.T) {
 	if len(lstMap) == 0 {
 		t.Errorf("функция ListenersSystemdTLSWithNames(), вернулась пустая карта слушателей")
 	}
-	// Оба файловых дескриптора в тесте получают имя s0, в карте должно быть два слушателя с именем s0.
+	// Оба файловых дескриптора, в тесте, получают имя s0, в карте должно быть два слушателя с именем s0.
 	if ll, ok = lstMap[s0]; !ok || len(ll) != len(sar) {
 		t.Errorf("функция ListenersSystemdTLSWithNames(), в карте слушателей не найдены слушатели сокета %q", s0)
 	}

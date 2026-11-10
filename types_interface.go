@@ -41,27 +41,27 @@ type Interface interface {
 	ListenAndServeTLSWithConfig(conf *Configuration, tlsConfig *tls.Config) Interface
 
 	// ListenersSystemdWithoutNames Возвращает срез net.Listener сокетов, переданных в процесс сервера
-	// из службы linux - systemd.
+	// из службы Linux - systemd.
 	ListenersSystemdWithoutNames() (ret []net.Listener, err error)
 
 	// ListenersSystemdPacketWithoutNames Возвращает срез net.PacketConn пакетных сокетов (udp, unixgram),
-	// переданных в процесс сервера из службы linux - systemd.
+	// переданных в процесс сервера из службы Linux - systemd.
 	ListenersSystemdPacketWithoutNames() (ret []net.PacketConn, err error)
 
 	// ListenersSystemdWithNames Возвращает карту срезов net.Listener сокетов, переданных в процесс сервера
-	// из службы linux - systemd.
+	// из службы Linux - systemd.
 	ListenersSystemdWithNames() (ret map[string][]net.Listener, err error)
 
 	// ListenersSystemdPacketWithNames Возвращает карту срезов net.PacketConn пакетных сокетов (udp, unixgram),
-	// переданных в процесс сервера из службы linux - systemd.
+	// переданных в процесс сервера из службы Linux - systemd.
 	ListenersSystemdPacketWithNames() (ret map[string][]net.PacketConn, err error)
 
 	// ListenersSystemdTLSWithoutNames Возвращает срез net.Listener для TLS сокетов, переданных в процесс сервера
-	// из службы linux - systemd.
+	// из службы Linux - systemd.
 	ListenersSystemdTLSWithoutNames(tlsConfig *tls.Config) (ret []net.Listener, err error)
 
 	// ListenersSystemdTLSWithNames Возвращает карту срезов net.Listener для TLS сокетов, переданных в процесс
-	// сервера из службы linux - systemd.
+	// сервера из службы Linux - systemd.
 	ListenersSystemdTLSWithNames(tlsConfig *tls.Config) (ret map[string][]net.Listener, err error)
 
 	// NewListener Создание нового слушателя соединений net.Listener на основе конфигурации сервера.

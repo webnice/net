@@ -426,10 +426,7 @@ func TestImpl_ListenAndServeWithConfigUuidStatic(t *testing.T) {
 
 // Тестирование создания слушателей во всех поддерживаемых режимах.
 func TestNewListenerModes(t *testing.T) {
-	const (
-		tSocket  = ".test-modes.socket"
-		tAddress = "127.0.0.1:18082"
-	)
+	const tSocket = ".test-modes.socket"
 	var (
 		err  error
 		lst  net.Listener
@@ -458,7 +455,7 @@ func TestNewListenerModes(t *testing.T) {
 		t.Errorf("функция NewListener(), режим %q, ошибка: %v, ожидался unix слушатель", netUnix, err)
 	}
 	_ = lst.Close()
-	// UnixPacket. Операционная система darwin не поддерживает unixpacket сокеты.
+	// UnixPacket. Операционная система Darwin не поддерживает unixpacket сокеты.
 	conf = &Configuration{Mode: netUnixPacket, Socket: tSocket}
 	if lst, rpc, err = nut.NewListener(conf); err != nil {
 		if !strings.Contains(err.Error(), "protocol not supported") {

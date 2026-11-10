@@ -85,6 +85,7 @@ func TestDefaultConfiguration(t *testing.T) {
 	}
 }
 
+//goland:noinspection ALL
 func TestParseAddress(t *testing.T) {
 	var err error
 	var conf *Configuration
@@ -156,6 +157,7 @@ func TestRecoverErrorWithStack(t *testing.T) {
 	}
 }
 
+//goland:noinspection ALL
 func TestFileClose(t *testing.T) {
 	var (
 		err error
