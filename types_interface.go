@@ -48,7 +48,7 @@ type Interface interface {
 	// из службы linux - systemd.
 	ListenersSystemdWithNames() (ret map[string][]net.Listener, err error)
 
-	// ListenersSystemdTLSWithoutNames Возвращает срез net.nnlistener для TLS сокетов переданных в процесс сервера
+	// ListenersSystemdTLSWithoutNames Возвращает срез net.Listener для TLS сокетов переданных в процесс сервера
 	// из службы linux - systemd.
 	ListenersSystemdTLSWithoutNames(tlsConfig *tls.Config) (ret []net.Listener, err error)
 

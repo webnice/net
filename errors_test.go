@@ -47,3 +47,33 @@ func TestErrNoConfiguration(t *testing.T) {
 		t.Fatalf("функции ошибок пакета повреждены")
 	}
 }
+
+// Тестирование всех ошибок пакета: возврат константного адреса ошибки и корректность текста ошибки.
+func TestErrorsAll(t *testing.T) {
+	var items = []struct {
+		name string
+		got  error
+		ref  error
+		text string
+	}{
+		{"AlreadyRunning", Errors().AlreadyRunning(), error(&errAlreadyRunning), cAlreadyRunning},
+		{"NoConfiguration", Errors().NoConfiguration(), error(&errNoConfiguration), cNoConfiguration},
+		{"ListenSystemdPID", Errors().ListenSystemdPID(), error(&errListenSystemdPID), cListenSystemdPID},
+		{"ListenSystemdFDS", Errors().ListenSystemdFDS(), error(&errListenSystemdFDS), cListenSystemdFDS},
+		{"ListenSystemdNotFound", Errors().ListenSystemdNotFound(), error(&errListenSystemdNotFound), cListenSystemdNotFound},
+		{"ListenSystemdQuantityNotMatch", Errors().ListenSystemdQuantityNotMatch(), error(&errListenSystemdQuantityNotMatch), cListenSystemdQuantityNotMatch},
+		{"TLSIsNil", Errors().TLSIsNil(), error(&errTLSIsNil), cTLSIsNil},
+		{"ServerHandlerIsNotSet", Errors().ServerHandlerIsNotSet(), error(&errServerHandlerIsNotSet), cServerHandlerIsNotSet},
+		{"ServerHandlerUdpIsNotSet", Errors().ServerHandlerUdpIsNotSet(), error(&errServerHandlerUdpIsNotSet), cServerHandlerUdpIsNotSet},
+		{"ListenerIsNotCreated", Errors().ListenerIsNotCreated(), error(&errListenerIsNotCreated), cListenerIsNotCreated},
+	}
+
+	for n := range items {
+		if items[n].got != items[n].ref {
+			t.Errorf("функция ошибки %q вернула не константный адрес ошибки", items[n].name)
+		}
+		if !strings.EqualFold(items[n].got.Error(), items[n].text) {
+			t.Errorf("функция ошибки %q, текст ошибки: %q, ожидался: %q", items[n].name, items[n].got.Error(), items[n].text)
+		}
+	}
+}

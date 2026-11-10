@@ -44,4 +44,10 @@ func TestHostPort(t *testing.T) {
 	if hpo = uco.HostPort(); hpo != hpe {
 		t.Errorf("функция HostPort, результат: %q, ожидалось: %q", hpo, hpe)
 	}
+	// Unixgram
+	uco.Mode = netUnixgram
+	hpe = vSocket
+	if hpo = uco.HostPort(); hpo != hpe {
+		t.Errorf("функция HostPort, результат: %q, ожидалось: %q", hpo, hpe)
+	}
 }

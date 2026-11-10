@@ -238,6 +238,9 @@ func TestListenersSystemdTLSWithoutNames(t *testing.T) {
 		err  error
 		obj  *impl
 		sar  []string
+		ll   []net.Listener
+		ok   bool
+		n    int
 		okFn func(*os.File) (net.Listener, error)
 		erFn func(*os.File) (net.Listener, error)
 		key  *tmpFile
@@ -294,7 +297,84 @@ func TestListenersSystemdTLSWithoutNames(t *testing.T) {
 	if _, err = obj.ListenersSystemdTLSWithoutNames(tcg); err != nil {
 		t.Errorf("функция ListenersSystemdTLSWithoutNames(), ошибка: %v, ожидалось: %v", err, nil)
 	}
-	if _, err = obj.ListenersSystemdTLSWithNames(tcg); err != nil {
+	// Проверка возвращаемой карты слушателей.
+	var lstMap map[string][]net.Listener
+	if lstMap, err = obj.ListenersSystemdTLSWithNames(tcg); err != nil {
 		t.Errorf("функция ListenersSystemdTLSWithNames(), ошибка: %v, ожидалось: %v", err, nil)
+	}
+	if len(lstMap) == 0 {
+		t.Errorf("функция ListenersSystemdTLSWithNames(), вернулась пустая карта слушателей")
+	}
+	// Оба файловых дескриптора в тесте получают имя s0, в карте должно быть два слушателя с именем s0.
+	if ll, ok = lstMap[s0]; !ok || len(ll) != len(sar) {
+		t.Errorf("функция ListenersSystemdTLSWithNames(), в карте слушателей не найдены слушатели сокета %q", s0)
+	}
+	for n = range ll {
+		if ll[n] == nil {
+			t.Errorf("функция ListenersSystemdTLSWithNames(), в карте слушателей найден пустой слушатель")
+		}
+	}
+}
+
+// Тестирование защиты от получения пустого слушателя от systemd без ошибки.
+// Первый файловый дескриптор возвращает ошибку, второй — успех, в результате список
+// слушателей содержит nil в первом элементе и не содержит ошибки.
+func TestNewListenerSystemdNilListener(t *testing.T) {
+	const (
+		keySystemd                 = "systemd"
+		s0, s1                     = "service0.socket", "service1.socket"
+		envListenPid, envListenFds = "LISTEN_PID", "LISTEN_FDS"
+		envListenFdnames           = "LISTEN_FDNAMES"
+		sepColon                   = ":"
+	)
+	var (
+		err  error
+		nut  Interface
+		sar  []string
+		mxFn func(*os.File) (net.Listener, error)
+		okFn func(*os.File) (net.Listener, error)
+	)
+
+	// Переменные окружения для сокета systemd.
+	sar = []string{s0, s1}
+	if err = os.Setenv(envListenFdnames, strings.Join(sar, sepColon)); err != nil {
+		t.Fatalf("невозможно установить переменные окружения %q", envListenFdnames)
+	}
+	defer func() { _ = os.Unsetenv(envListenFdnames) }()
+	if err = os.Setenv(envListenPid, fmt.Sprint(os.Getpid())); err != nil {
+		t.Fatalf("невозможно установить переменные окружения %q", envListenPid)
+	}
+	defer func() { _ = os.Unsetenv(envListenPid) }()
+	if err = os.Setenv(envListenFds, fmt.Sprint(len(sar))); err != nil {
+		t.Fatalf("невозможно установить переменные окружения %q", envListenFds)
+	}
+	defer func() { _ = os.Unsetenv(envListenFds) }()
+	// Подготовка. Первый дескриптор возвращает ошибку, второй — успех.
+	mxFn = func(file *os.File) (ret net.Listener, err error) {
+		if file.Name() == s0 {
+			err = errors.New("ошибка")
+			return
+		}
+		ret, err = net.Listen("tcp", "127.0.0.1:18080")
+		_ = ret.Close()
+		return
+	}
+	okFn = func(_ *os.File) (ret net.Listener, err error) {
+		ret, err = net.Listen("tcp", "127.0.0.1:18080")
+		_ = ret.Close()
+		return
+	}
+	nut = New()
+	nut.(*impl).fnNf = func(_ uintptr, name string) *os.File { return os.NewFile(0, name) }
+	nut.(*impl).fnFc = func(_ *os.File) error { return nil }
+	// Название сокета не указано, получен пустой слушатель без ошибки.
+	nut.(*impl).fnFl = mxFn
+	if _, _, err = nut.NewListener(&Configuration{Mode: keySystemd}); !errors.Is(err, Errors().ListenerIsNotCreated()) {
+		t.Errorf("функция NewListener(), ошибка: %v, ожидалась: %v", err, Errors().ListenerIsNotCreated())
+	}
+	// Все дескрипторы в порядке — ошибки нет.
+	nut.(*impl).fnFl = okFn
+	if _, _, err = nut.NewListener(&Configuration{Mode: keySystemd, Socket: s0}); err != nil {
+		t.Errorf("функция NewListener(), ошибка: %v, ожидалось: %v", err, nil)
 	}
 }

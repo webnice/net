@@ -175,3 +175,79 @@ func TestFileClose(t *testing.T) {
 		t.Errorf("функция fh.Close(), ошибка: %v, ожидалась ошибка", err)
 	}
 }
+
+// Тестирование конвертации строки с восьмеричным значением в os.FileMode.
+func TestParseFileModeWithDefault(t *testing.T) {
+	var ret os.FileMode
+
+	if ret = parseFileModeWithDefault("0755"); ret != os.FileMode(0755) {
+		t.Errorf("функция parseFileModeWithDefault(), результат: %o, ожидалось: %o", ret, 0755)
+	}
+	if ret = parseFileModeWithDefault("0666"); ret != os.FileMode(0666) {
+		t.Errorf("функция parseFileModeWithDefault(), результат: %o, ожидалось: %o", ret, 0666)
+	}
+	if ret = parseFileModeWithDefault("0"); ret != os.FileMode(0) {
+		t.Errorf("функция parseFileModeWithDefault(), результат: %o, ожидалось: %o", ret, 0)
+	}
+	if ret = parseFileModeWithDefault(""); ret != os.FileMode(defaultSocketFileMode) {
+		t.Errorf("функция parseFileModeWithDefault(), результат: %o, ожидалось: %o", ret, defaultSocketFileMode)
+	}
+	if ret = parseFileModeWithDefault("не число"); ret != os.FileMode(defaultSocketFileMode) {
+		t.Errorf("функция parseFileModeWithDefault(), результат: %o, ожидалось: %o", ret, defaultSocketFileMode)
+	}
+}
+
+// Тестирование режима unixgram в конфигурации по умолчанию.
+func TestDefaultConfigurationUnixgram(t *testing.T) {
+	const testSocket = ".test-unixgram.socket"
+	var conf = &Configuration{Mode: netUnixgram, Socket: testSocket}
+
+	defaultConfiguration(conf)
+	if conf.Mode != netUnixgram {
+		t.Errorf("режим unixgram с указанным сокетом, Mode: %q, ожидался: %q", conf.Mode, netUnixgram)
+	}
+	if conf.HostPort() != testSocket {
+		t.Errorf("режим unixgram с указанным сокетом, HostPort: %q, ожидался: %q", conf.HostPort(), testSocket)
+	}
+	// Без указания сокета режим unixgram должен быть заменён на TCP.
+	conf = &Configuration{Mode: netUnixgram}
+	defaultConfiguration(conf)
+	if conf.Mode != netTcp {
+		t.Errorf("режим unixgram без сокета, Mode: %q, ожидался: %q", conf.Mode, netTcp)
+	}
+	// Режим unix без сокета.
+	conf = &Configuration{Mode: netUnix}
+	defaultConfiguration(conf)
+	if conf.Mode != netTcp {
+		t.Errorf("режим unix без сокета, Mode: %q, ожидался: %q", conf.Mode, netTcp)
+	}
+	// Режим unixpacket без сокета.
+	conf = &Configuration{Mode: netUnixPacket}
+	defaultConfiguration(conf)
+	if conf.Mode != netTcp {
+		t.Errorf("режим unixpacket без сокета, Mode: %q, ожидался: %q", conf.Mode, netTcp)
+	}
+	// Конфигурация SocketMode по умолчанию.
+	conf = new(Configuration)
+	defaultConfiguration(conf)
+	if conf.SocketMode == "" {
+		t.Errorf("конфигурация по умолчанию, SocketMode пустой, ожидалось значение по умолчанию")
+	}
+}
+
+// Тестирование безопасного закрытия канала.
+func TestSafeClose(t *testing.T) {
+	var ch = make(chan struct{})
+
+	safeClose(ch)
+	safeClose(ch) // Повторное закрытие не должно приводить к панике.
+}
+
+// Тестирование безопасного ожидания сигнала из канала.
+func TestSafeWait(t *testing.T) {
+	var ch = make(chan struct{}, 1)
+
+	ch <- struct{}{}
+	safeWait(ch)
+	safeWait(ch) // Ожидание из закрытого канала не должно блокироваться.
+}

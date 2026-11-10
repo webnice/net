@@ -42,7 +42,7 @@ func (nut *impl) ListenAndServeTLS(addr string, certFile string, keyFile string,
 // обслуживания входящих соединений.
 func (nut *impl) ListenAndServeWithConfig(conf *Configuration) Interface {
 	if conf == nil {
-		nut.err = Errors().NoConfiguration()
+		nut.setError(Errors().NoConfiguration())
 		return nut
 	}
 	nut.conf = conf
@@ -55,7 +55,7 @@ func (nut *impl) ListenAndServeWithConfig(conf *Configuration) Interface {
 // обслуживания входящих соединений.
 func (nut *impl) ListenAndServeTLSWithConfig(conf *Configuration, tlsConfig *tls.Config) Interface {
 	if conf == nil {
-		nut.err = Errors().NoConfiguration()
+		nut.setError(Errors().NoConfiguration())
 		return nut
 	}
 	nut.conf = conf
@@ -126,6 +126,11 @@ func (nut *impl) NewListener(conf *Configuration) (
 			ValidateHeader:    nil,
 		}
 	}
+	// Защита от отсутствия слушателя без ошибки, например, при получении от systemd
+	// пустого списка соединений.
+	if ret == nil && rpc == nil && err == nil {
+		err = Errors().ListenerIsNotCreated()
+	}
 
 	return
 }
@@ -146,6 +151,13 @@ func (nut *impl) NewListenerTLS(conf *Configuration, tlsConfig *tls.Config) (
 	if lst, rpc, ler = nut.NewListener(conf); tlsConfig == nil {
 		if tlsConfig, err = nut.NewTLSConfigDefault(conf.TLSPublicKeyPEM, conf.TLSPrivateKeyPEM); err != nil {
 			err = fmt.Errorf(errTemplate, conf.TLSPublicKeyPEM, conf.TLSPrivateKeyPEM, err)
+			if lst != nil {
+				_ = lst.Close()
+			}
+			if rpc != nil {
+				_ = rpc.Close()
+				rpc = nil
+			}
 			return
 		}
 	}
@@ -182,19 +194,21 @@ func (nut *impl) Listen(tlsConfig *tls.Config) Interface {
 	var (
 		lTcp net.Listener
 		lUdp net.PacketConn
+		err  error
 	)
 
 	if nut.isRun.Load() {
-		nut.err = Errors().AlreadyRunning()
+		nut.setError(Errors().AlreadyRunning())
 		return nut
 	}
 	switch tlsConfig == nil {
 	case true:
-		lTcp, lUdp, nut.err = nut.NewListener(nut.conf)
+		lTcp, lUdp, err = nut.NewListener(nut.conf)
 	case false:
-		lTcp, lUdp, nut.err = nut.NewListenerTLS(nut.conf, tlsConfig)
+		lTcp, lUdp, err = nut.NewListenerTLS(nut.conf, tlsConfig)
 	}
-	if nut.err != nil {
+	if err != nil {
+		nut.setError(err)
 		return nut
 	}
 	switch {
@@ -236,7 +250,7 @@ func (nut *impl) serve(nl *netListener, id string) Interface {
 	defer nut.lck.Unlock()
 	// Выход, если сервер запущен или начато завершение работы сервера.
 	if nut.isRun.Load() || nut.isShutdown.Load() {
-		nut.err = Errors().AlreadyRunning()
+		nut.setError(Errors().AlreadyRunning())
 		return nut
 	}
 	if nut.listener = nl; nut.conf == nil {
@@ -245,9 +259,9 @@ func (nut *impl) serve(nl *netListener, id string) Interface {
 		conf.ID = id
 		nut.conf = conf
 	}
-	if nut.onShutdown == nil {
-		nut.onShutdown = make(chan struct{})
-	}
+	// Новый канал завершения работы сервера. Канал создаётся всегда, так как после
+	// завершения работы сервера канал находится в закрытом состоянии.
+	nut.onShutdown = make(chan struct{})
 	// Обеспечение контролируемого синхронного запуска потока.
 	onUp = make(chan struct{})
 	go nut.run(onUp)
@@ -274,29 +288,28 @@ func (nut *impl) run(onUp chan struct{}) {
 	if nut.conf.ID == "" {
 		nut.conf.ID = uuid.NewString()
 	}
+	// Проверка назначения основной функции сервера, выполняется до сигнала обратной связи о запуске сервера.
+	switch {
+	case nut.listener.isUdp() && nut.handlerUdp == nil:
+		nut.setError(Errors().ServerHandlerUdpIsNotSet())
+		onUp <- struct{}{}
+		return
+	case !nut.listener.isUdp() && nut.handler == nil:
+		nut.setError(Errors().ServerHandlerIsNotSet())
+		onUp <- struct{}{}
+		return
+	}
 	// Обеспечение синхронного запуска потока.
 	nut.isRun.Store(true)
 	onUp <- struct{}{}
-	switch nut.listener.isUdp() {
-	case true:
-		if nut.handlerUdp == nil {
-			nut.err = Errors().ServerHandlerUdpIsNotSet()
-			return
-		}
-	default:
-		if nut.handler == nil {
-			nut.err = Errors().ServerHandlerIsNotSet()
-			return
-		}
-	}
 	// Запуск основной функции сервера.
 	if err = nut.safeHandlerRun(); !nut.isShutdown.Load() && err != nil {
-		nut.err = err
+		nut.setError(err)
 	}
-	// Финализация флагов.
+	// Финализация флагов. Выполняется всегда, независимо от результата запуска сервера.
 	nut.isShutdown.Store(false)
 	nut.isRun.Store(false)
-	safeSendSignal(nut.onShutdown)
+	safeClose(nut.onShutdown)
 }
 
 // Безопасный запуск пользовательской основной функции сервера.

@@ -7,6 +7,8 @@ func (uco *Configuration) HostPort() (ret string) {
 	switch uco.Mode {
 	case netUnix, netUnixPacket:
 		ret = fmt.Sprintf("%s:%s", uco.Mode, uco.Socket)
+	case netUnixgram:
+		ret = uco.Socket
 	case netSystemd:
 		ret = uco.Mode
 	default:

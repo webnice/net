@@ -421,3 +421,156 @@ func TestImpl_ListenAndServeWithConfigUuidStatic(t *testing.T) {
 		t.Errorf("функция Stop(), ошибка: %v, ожидалось: %v", err, nil)
 	}
 }
+
+// Тестирование создания слушателей во всех поддерживаемых режимах.
+func TestNewListenerModes(t *testing.T) {
+	const (
+		tSocket  = ".test-modes.socket"
+		tAddress = "127.0.0.1:18082"
+	)
+	var (
+		err  error
+		lst  net.Listener
+		rpc  net.PacketConn
+		nut  Interface
+		conf *Configuration
+	)
+
+	nut = New()
+	defer func() { _ = os.Remove(tSocket) }()
+	// UDP.
+	conf = &Configuration{Mode: netUdp, Host: "127.0.0.1", Port: 18083}
+	if lst, rpc, err = nut.NewListener(conf); err != nil || lst != nil || rpc == nil {
+		t.Errorf("функция NewListener(), режим %q, ошибка: %v, ожидался UDP слушатель", netUdp, err)
+	}
+	_ = rpc.Close()
+	// UDP4.
+	conf = &Configuration{Mode: netUdp4, Host: "127.0.0.1", Port: 18083}
+	if _, rpc, err = nut.NewListener(conf); err != nil || rpc == nil {
+		t.Errorf("функция NewListener(), режим %q, ошибка: %v, ожидался UDP слушатель", netUdp4, err)
+	}
+	_ = rpc.Close()
+	// Unix.
+	conf = &Configuration{Mode: netUnix, Socket: tSocket}
+	if lst, rpc, err = nut.NewListener(conf); err != nil || lst == nil || rpc != nil {
+		t.Errorf("функция NewListener(), режим %q, ошибка: %v, ожидался unix слушатель", netUnix, err)
+	}
+	_ = lst.Close()
+	// UnixPacket. Операционная система darwin не поддерживает unixpacket сокеты.
+	conf = &Configuration{Mode: netUnixPacket, Socket: tSocket}
+	if lst, rpc, err = nut.NewListener(conf); err != nil {
+		if !strings.Contains(err.Error(), "protocol not supported") {
+			t.Errorf("функция NewListener(), режим %q, ошибка: %v", netUnixPacket, err)
+		}
+	} else {
+		if lst == nil || rpc != nil {
+			t.Errorf("функция NewListener(), режим %q, ожидался unixpacket слушатель", netUnixPacket)
+		}
+		_ = lst.Close()
+	}
+	// Unixgram.
+	conf = &Configuration{Mode: netUnixgram, Socket: tSocket}
+	if lst, rpc, err = nut.NewListener(conf); err != nil || lst != nil || rpc == nil {
+		t.Errorf("функция NewListener(), режим %q, ошибка: %v, ожидался unixgram слушатель", netUnixgram, err)
+	}
+	_ = rpc.Close()
+	// TCP.
+	conf = &Configuration{Mode: netTcp, Host: "127.0.0.1", Port: 18082}
+	if lst, rpc, err = nut.NewListener(conf); err != nil || lst == nil || rpc != nil {
+		t.Errorf("функция NewListener(), режим %q, ошибка: %v, ожидался TCP слушатель", netTcp, err)
+	}
+	_ = lst.Close()
+	// TCP4.
+	conf = &Configuration{Mode: netTcp4, Host: "127.0.0.1", Port: 18082}
+	if lst, rpc, err = nut.NewListener(conf); err != nil || lst == nil || rpc != nil {
+		t.Errorf("функция NewListener(), режим %q, ошибка: %v, ожидался TCP4 слушатель", netTcp4, err)
+	}
+	_ = lst.Close()
+}
+
+// Тестирование запуска сервера с указанием ID.
+func TestServeWithId(t *testing.T) {
+	const (
+		testAddress1 = "127.0.0.1:18080"
+		testID       = "db2c0a9a-67d1-4a20-8e44-dfa5b31561a4"
+	)
+	var (
+		err error
+		ltn net.Listener
+		w1  Interface
+	)
+
+	if ltn, err = net.Listen("tcp", testAddress1); err != nil {
+		t.Errorf("функция Listen(%q, %q), прервана ошибкой: %s", "tcp", testAddress1, err)
+	}
+	w1 = New().
+		Handler(getTestHandlerFn(false)).
+		ServeWithId(ltn, testID)
+	defer w1.Stop()
+	if w1.(*impl).conf == nil {
+		t.Errorf("ошибка создания конфигурации сервера")
+	}
+	if w1.ID() != testID {
+		t.Errorf("функция ID(), вернулось: %q, ожидалось: %q", w1.ID(), testID)
+	}
+}
+
+// Тестирование запуска UDP сервера с указанием ID.
+func TestServeUdpWithId(t *testing.T) {
+	const (
+		testAddress1 = "127.0.0.1:18080"
+		testID       = "eb3c1b1b-78e2-4b31-9f55-e0b6c42672b5"
+	)
+	var (
+		err error
+		lpc net.PacketConn
+		w1  Interface
+	)
+
+	if lpc, err = net.ListenPacket("udp", testAddress1); err != nil {
+		t.Errorf("функция ListenPacket(%q, %q), прервана ошибкой: %s", "udp", testAddress1, err)
+	}
+	w1 = New().
+		HandlerUdp(testUdpHandler).
+		ServeUdpWithId(lpc, testID)
+	defer w1.Stop()
+	if w1.(*impl).conf == nil {
+		t.Errorf("ошибка создания конфигурации сервера")
+	}
+	if w1.ID() != testID {
+		t.Errorf("функция ID(), вернулось: %q, ожидалось: %q", w1.ID(), testID)
+	}
+}
+
+// Тестирование завершения работы сервера, запущенного без назначения основной функции.
+// Состояние сервера должно быть финализировано, функция Wait() не должна блокироваться.
+func TestServeNoHandlerFinalization(t *testing.T) {
+	const testAddress1 = "127.0.0.1:18080"
+	var (
+		err error
+		ltn net.Listener
+		nut Interface
+	)
+
+	if ltn, err = net.Listen("tcp", testAddress1); err != nil {
+		t.Errorf("функция Listen(%q, %q), прервана ошибкой: %s", "tcp", testAddress1, err)
+	}
+	defer func() { _ = ltn.Close() }()
+	nut = New().Serve(ltn)
+	if err = nut.Error(); !errors.Is(err, Errors().ServerHandlerIsNotSet()) {
+		t.Errorf("функция Serve(), ошибка: %v, ожидалось: %v", err, Errors().ServerHandlerIsNotSet())
+	}
+	if nut.IsRunning() {
+		t.Errorf("после ошибки запуска функция IsRunning() вернула: %t, ожидалось: %t", true, false)
+	}
+	// Функция Wait() не должна блокироваться.
+	nut.Wait()
+	// Повторный запуск с назначенной функцией сервера.
+	nut = New().
+		Handler(getTestHandlerFn(false)).
+		Serve(ltn)
+	defer nut.Stop()
+	if err = nut.Error(); err != nil {
+		t.Errorf("функция Serve(), ошибка: %v, ожидалось: %v", err, nil)
+	}
+}

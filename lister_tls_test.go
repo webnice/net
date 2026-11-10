@@ -1,9 +1,12 @@
 package net
 
 import (
+	"crypto/tls"
 	"errors"
+	"fmt"
 	"net"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -260,5 +263,123 @@ func TestNewListenerTLS(t *testing.T) {
 	if err = nut.Stop().
 		Error(); err != nil {
 		t.Errorf("функция Stop(), ошибка: %v, ожидалось: %v", err, nil)
+	}
+}
+
+// Тестирование создания TLS слушателя с переданной TLS конфигурацией.
+func TestNewListenerTLSWithProvidedConfig(t *testing.T) {
+	const testAddress1 = "127.0.0.1:18089"
+	var (
+		err    error
+		key    *tmpFile
+		crt    *tmpFile
+		nut    Interface
+		cfg    *Configuration
+		lst    net.Listener
+		tlsCfg *tls.Config
+	)
+
+	key, crt = newTmpFile(getKeyEcdsa()), newTmpFile(getCrtEcdsa())
+	defer func() { key.Clean(); crt.Clean() }()
+	tlsCfg = testTls(key.Filename, crt.Filename)
+	cfg = &Configuration{Mode: netTcp, Host: "127.0.0.1", Port: 18089}
+	nut = New()
+	// Переданная TLS конфигурация, загрузка ключей не выполняется.
+	if lst, _, err = nut.NewListenerTLS(cfg, tlsCfg); err != nil || lst == nil {
+		t.Errorf("функция NewListenerTLS(), ошибка: %v, ожидался слушатель", err)
+	}
+	if err = lst.Close(); err != nil {
+		t.Errorf("функция Close(), ошибка: %v, ожидалось: %v", err, nil)
+	}
+}
+
+// Тестирование закрытия UDP соединения при ошибке загрузки TLS ключей.
+func TestNewListenerTLSUdpTlsError(t *testing.T) {
+	const testAddress1 = "127.0.0.1:18090"
+	var (
+		err error
+		key *tmpFile
+		crt *tmpFile
+		nut Interface
+		cfg *Configuration
+		lst net.Listener
+		rpc net.PacketConn
+	)
+
+	key, crt = newTmpFile([]byte("123")), newTmpFile([]byte("321"))
+	defer func() { key.Clean(); crt.Clean() }()
+	cfg = &Configuration{Mode: netUdp, Host: "127.0.0.1", Port: 18090}
+	nut = New()
+	if lst, rpc, err = nut.NewListenerTLS(cfg, nil); err == nil {
+		t.Errorf("функция NewListenerTLS(), ожидалась ошибка загрузки TLS ключей")
+	}
+	if lst != nil || rpc != nil {
+		t.Errorf("функция NewListenerTLS(), ожидались пустые слушатели при ошибке")
+	}
+	// Порт должен быть освобождён, соединение закрыто функцией.
+	var udpAddr *net.UDPAddr
+	if udpAddr, err = net.ResolveUDPAddr(netUdp, testAddress1); err != nil {
+		t.Errorf("функция ResolveUDPAddr(), ошибка: %v", err)
+	}
+	if rpc, err = net.ListenUDP(netUdp, udpAddr); err != nil {
+		t.Errorf("порт %q не был освобождён после ошибки: %v", testAddress1, err)
+	}
+	_ = rpc.Close()
+}
+
+// Тестирование защиты от получения пустого слушателя без ошибки в режиме TLS.
+func TestNewListenerTLSNilListener(t *testing.T) {
+	const (
+		keySystemd                 = "systemd"
+		s0, s1                     = "service0.socket", "service1.socket"
+		envListenPid, envListenFds = "LISTEN_PID", "LISTEN_FDS"
+		envListenFdnames           = "LISTEN_FDNAMES"
+		sepColon                   = ":"
+	)
+	var (
+		err    error
+		nut    Interface
+		sar    []string
+		key    *tmpFile
+		crt    *tmpFile
+		tlsCfg *tls.Config
+		mxFn   func(*os.File) (net.Listener, error)
+	)
+
+	// Переменные окружения для сокета systemd.
+	sar = []string{s0, s1}
+	if err = os.Setenv(envListenFdnames, strings.Join(sar, sepColon)); err != nil {
+		t.Fatalf("невозможно установить переменные окружения %q", envListenFdnames)
+	}
+	defer func() { _ = os.Unsetenv(envListenFdnames) }()
+	if err = os.Setenv(envListenPid, fmt.Sprint(os.Getpid())); err != nil {
+		t.Fatalf("невозможно установить переменные окружения %q", envListenPid)
+	}
+	defer func() { _ = os.Unsetenv(envListenPid) }()
+	if err = os.Setenv(envListenFds, fmt.Sprint(len(sar))); err != nil {
+		t.Fatalf("невозможно установить переменные окружения %q", envListenFds)
+	}
+	defer func() { _ = os.Unsetenv(envListenFds) }()
+	key, crt = newTmpFile(getKeyEcdsa()), newTmpFile(getCrtEcdsa())
+	defer func() { key.Clean(); crt.Clean() }()
+	if tlsCfg, err = New().NewTLSConfigDefault(crt.Filename, key.Filename); err != nil {
+		t.Fatalf("не удалось создать *tls.Config, ошибка: %s", err)
+	}
+	// Первый дескриптор возвращает ошибку, второй — успех.
+	mxFn = func(file *os.File) (ret net.Listener, err error) {
+		if file.Name() == s0 {
+			err = errors.New("ошибка")
+			return
+		}
+		ret, err = net.Listen("tcp", "127.0.0.1:18080")
+		_ = ret.Close()
+		return
+	}
+	nut = New()
+	nut.(*impl).fnNf = func(_ uintptr, name string) *os.File { return os.NewFile(0, name) }
+	nut.(*impl).fnFc = func(_ *os.File) error { return nil }
+	nut.(*impl).fnFl = mxFn
+	if _, _, err = nut.NewListenerTLS(&Configuration{Mode: keySystemd}, tlsCfg); !errors.Is(err, Errors().ListenerIsNotCreated()) {
+		t.Errorf("функция NewListenerTLS(), ошибка: %v, ожидалась: %v", err, Errors().ListenerIsNotCreated())
 	}
 }

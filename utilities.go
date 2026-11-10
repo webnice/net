@@ -17,15 +17,18 @@ func defaultConfiguration(conf *Configuration) {
 	}
 	// Проверка Mode.
 	switch strings.ToLower(conf.Mode) {
-	case netUdp, netUdp4, netUdp6, netTcp, netTcp4, netTcp6, netUnix, netUnixPacket, netSystemd:
+	case netUdp, netUdp4, netUdp6, netTcp, netTcp4, netTcp6, netUnix, netUnixPacket, netUnixgram, netSystemd:
 		conf.Mode = strings.ToLower(conf.Mode)
 	case netSocket:
 		conf.Mode = netUnix
 	default:
 		conf.Mode = netTcp
 	}
-	if conf.Mode == netUnix && conf.Socket == "" || conf.Mode == netUnixPacket && conf.Socket == "" {
-		conf.Mode = netTcp
+	switch conf.Mode {
+	case netUnix, netUnixPacket, netUnixgram:
+		if conf.Socket == "" {
+			conf.Mode = netTcp
+		}
 	}
 	if conf.Address == "" && conf.Mode == netTcp {
 		if conf.Port == 0 {
@@ -113,10 +116,4 @@ func safeWait(ch chan struct{}) {
 func safeClose(ch chan struct{}) {
 	defer func() { _ = recover() }()
 	close(ch)
-}
-
-// Безопасная отправка сигнала.
-func safeSendSignal(ch chan struct{}) {
-	defer func() { _ = recover() }()
-	ch <- struct{}{}
 }

@@ -124,7 +124,7 @@ func (nut *impl) ListenersSystemdWithNames() (ret map[string][]net.Listener, err
 	return
 }
 
-// ListenersSystemdTLSWithoutNames Возвращает срез net.nnlistener для TLS сокетов переданных в процесс сервера
+// ListenersSystemdTLSWithoutNames Возвращает срез net.Listener для TLS сокетов переданных в процесс сервера
 // из службы linux - systemd.
 func (nut *impl) ListenersSystemdTLSWithoutNames(tlsConfig *tls.Config) (ret []net.Listener, err error) {
 	var (
@@ -147,7 +147,7 @@ func (nut *impl) ListenersSystemdTLSWithoutNames(tlsConfig *tls.Config) (ret []n
 	return
 }
 
-// ListenersSystemdTLSWithNames Возвращает карту срезов net.nnlistener для TLS сокетов переданных в процесс сервера
+// ListenersSystemdTLSWithNames Возвращает карту срезов net.Listener для TLS сокетов переданных в процесс сервера
 // из службы linux - systemd.
 func (nut *impl) ListenersSystemdTLSWithNames(tlsConfig *tls.Config) (ret map[string][]net.Listener, err error) {
 	var (
@@ -169,6 +169,7 @@ func (nut *impl) ListenersSystemdTLSWithNames(tlsConfig *tls.Config) (ret map[st
 			ll[n] = tls.NewListener(l, tlsConfig)
 		}
 	}
+	ret = listeners
 
 	return
 }

@@ -27,6 +27,7 @@ const defaultSocketFileMode = 0666
 type impl struct {
 	lck        *sync.Mutex                          // Защита от гонки.
 	err        error                                // Сохранение последней ошибки.
+	errLck     sync.Mutex                           // Защита последней ошибки сервера от гонки.
 	isRun      *atomic.Bool                         // Состояние выполнения сервера, =истина - запущен, =ложь - остановлен.
 	handler    HandlerFn                            // Основная функция TCP сервера.
 	handlerUdp HandlerUdpFn                         // Основная функция UDP сервера.

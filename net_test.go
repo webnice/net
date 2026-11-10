@@ -63,6 +63,92 @@ func TestHandler(t *testing.T) {
 	}
 }
 
+// Тестирование назначения основной функции UDP сервера.
+func TestHandlerUdp(t *testing.T) {
+	var (
+		her HandlerUdpFn
+		nut Interface
+		nio *impl
+	)
+
+	her = func(pc net.PacketConn) error { return nil }
+	nut = New()
+	nio = nut.(*impl)
+	if nio.handlerUdp != nil {
+		t.Errorf("не верно создан объект Interface")
+		return
+	}
+	nut.HandlerUdp(her)
+	if nio.handlerUdp == nil {
+		t.Errorf("не корректно работает функция HandlerUdp(), ожидалось назначение функции сервера")
+	}
+	if reflect.ValueOf(nio.handlerUdp).Pointer() != reflect.ValueOf(her).Pointer() {
+		t.Errorf("не корректно работает функция HandlerUdp(), ожидалось назначение переданной функции сервера")
+	}
+}
+
+// Тестирование функции очистки последней ошибки.
+func TestClean(t *testing.T) {
+	var nio = New().(*impl)
+
+	nio.err = errors.New("test error")
+	if nio.Error() == nil {
+		t.Errorf("функция Error(), ошибка равна nil, ожидалась ошибка")
+	}
+	nio.Clean()
+	if nio.Error() != nil {
+		t.Errorf("функция Clean(), ошибка: %v, ожидалось: %v", nio.Error(), nil)
+	}
+}
+
+// Тестирование ID сервера до запуска.
+func TestID(t *testing.T) {
+	var nut Interface
+
+	if nut = New(); nut.ID() != "" {
+		t.Errorf("функция ID(), вернулось: %q, ожидалось: %q", nut.ID(), "")
+	}
+}
+
+// Тестирование остановки не запущенного сервера.
+func TestStopNotRunning(t *testing.T) {
+	var nut Interface
+
+	nut = New().Stop()
+	if nut.Error() != nil {
+		t.Errorf("функция Stop(), ошибка: %v, ожидалось: %v", nut.Error(), nil)
+	}
+	if nut.IsRunning() {
+		t.Errorf("функция IsRunning(), вернулось: %t, ожидалось: %t", true, false)
+	}
+}
+
+// Тестирование состояния сервера после полного завершения работы.
+func TestIsRunningAfterStop(t *testing.T) {
+	const testAddress1 = "127.0.0.1:18080"
+	var (
+		err error
+		nut Interface
+	)
+
+	nut = New().
+		Handler(getTestHandlerFn(false)).
+		ListenAndServe(testAddress1)
+	defer nut.Stop()
+	if !nut.IsRunning() {
+		t.Errorf("функция IsRunning(), вернулось: %t, ожидалось: %t", false, true)
+	}
+	if err = nut.
+		Stop().
+		Wait().
+		Error(); err != nil {
+		t.Errorf("функция Stop(), ошибка: %v, ожидалось: %v", err, nil)
+	}
+	if nut.IsRunning() {
+		t.Errorf("после завершения работы сервера функция IsRunning() вернула: %t, ожидалось: %t", true, false)
+	}
+}
+
 // Тестирование функции возвращения последней ошибки.
 func TestError(t *testing.T) {
 	const _TestString = "m7SqTD9K2FEstVjD2QR9"

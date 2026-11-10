@@ -11,6 +11,7 @@ const (
 	cTLSIsNil                      = "Конфигурация TLS сервера пустая."
 	cServerHandlerIsNotSet         = "Не установлен обработчик основной функции TCP сервера."
 	cServerHandlerUdpIsNotSet      = "Не установлен обработчик основной функции UDP сервера."
+	cListenerIsNotCreated          = "Слушатель соединений не создан."
 )
 
 // Константы указываются в объектах в качестве фиксированного адреса на протяжении всего времени работы приложения.
@@ -26,6 +27,7 @@ var (
 	errTLSIsNil                      = err(cTLSIsNil)
 	errServerHandlerIsNotSet         = err(cServerHandlerIsNotSet)
 	errServerHandlerUdpIsNotSet      = err(cServerHandlerUdpIsNotSet)
+	errListenerIsNotCreated          = err(cListenerIsNotCreated)
 )
 
 type (
@@ -68,3 +70,6 @@ func (e *Error) ServerHandlerIsNotSet() error { return &errServerHandlerIsNotSet
 
 // ServerHandlerUdpIsNotSet Не установлен обработчик основной функции UDP сервера.
 func (e *Error) ServerHandlerUdpIsNotSet() error { return &errServerHandlerUdpIsNotSet }
+
+// ListenerIsNotCreated Слушатель соединений не создан.
+func (e *Error) ListenerIsNotCreated() error { return &errListenerIsNotCreated }
